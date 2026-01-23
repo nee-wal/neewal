@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #3FB6A8;
+  --color-record: #E5533D;
+  --color-background-light: #f8f6f6;
+  --color-background-dark: #0B1416;
+  --color-surface-dark: #122023;
+  --color-border-dark: #1E3237;
+
+  --color-text-primary: #DCEEEE;
+  --color-text-muted: #8FB5B8;
+
+  --font-display: "Inter", "sans-serif";
+  --font-mono: "JetBrains Mono", "monospace";
+}
+
+@layer utilities {
+  .active-record-border {
+    box-shadow: inset 0 0 0 1px var(--color-record);
+  }
+}
