@@ -4,6 +4,7 @@
     "module": "NodeNext",
     "strict": true,
     "outDir": "../../dist-electron",
+    "types": ["../../types"],
     "skipLibCheck": true
   }
 }
