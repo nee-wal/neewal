@@ -1,8 +1,10 @@
-import {useAuth} from '../context/AuthContext';
-import {Button} from '../components/Button';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { Button } from '../components/Button';
 
 export default function Recorder() {
-    const {signOut, user} = useAuth();
+    const { signOut, user, isGuest } = useAuth();
+    const navigate = useNavigate();
 
     return (
         <div className="flex h-screen flex-col bg-[var(--color-background-dark)] text-[var(--color-text-primary)]">
@@ -12,10 +14,25 @@ export default function Recorder() {
                     <span className="text-[var(--color-primary)]">⦿</span> Neewal
                 </div>
                 <div className="flex items-center gap-4 text-sm">
-                    <span className="text-[var(--color-text-muted)]">{user?.email}</span>
-                    <Button variant="outline" size="sm" onClick={() => signOut()}>
-                        Logout
-                    </Button>
+                    {isGuest ? (
+                        <>
+                            <span className="text-[var(--color-text-muted)]">Guest</span>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate('/login', { state: { canClose: true } })}
+                            >
+                                Login
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            <span className="text-[var(--color-text-muted)]">{user?.email}</span>
+                            <Button variant="outline" size="sm" onClick={() => signOut()}>
+                                Logout
+                            </Button>
+                        </>
+                    )}
                 </div>
             </header>
 
@@ -46,7 +63,7 @@ export default function Recorder() {
                     <div className="mt-4 flex justify-center">
                         <button
                             className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-record)] text-white shadow-lg transition-transform hover:scale-105 active:scale-95">
-                            <div className="h-6 w-6 rounded bg-white"/>
+                            <div className="h-6 w-6 rounded bg-white" />
                             {/* Stop icon initially? Or Circle for record. Let's do huge red circle */}
                         </button>
                     </div>

@@ -5,18 +5,18 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Recorder from './pages/Recorder'; // We'll create this next
 import './index.css';
-import type {JSX} from "react";
+import type { JSX } from "react";
 
 // Guard for protected routes
 function RequireAuth({ children }: { children: JSX.Element }) {
-  const { session, loading } = useAuth();
+  const { session, isGuest, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
     return <div className="flex h-screen items-center justify-center text-white">Loading...</div>;
   }
 
-  if (!session) {
+  if (!session && !isGuest) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
@@ -31,6 +31,7 @@ function PublicOnly({ children }: { children: JSX.Element }) {
     return <div className="flex h-screen items-center justify-center text-white">Loading...</div>;
   }
 
+  // Only redirect if "real" user session exists. Guests should be able to access login/signup.
   if (session) {
     return <Navigate to="/" replace />;
   }

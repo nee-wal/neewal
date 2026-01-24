@@ -5,9 +5,11 @@ import { supabase } from '../lib/supabase';
 type AuthContextType = {
     session: Session | null;
     user: User | null;
+    isGuest: boolean;
     loading: boolean;
     signInWithEmail: (email: string, password: string) => Promise<{ error: any }>;
     signUpWithEmail: (email: string, password: string) => Promise<{ error: any }>;
+    loginAsGuest: () => Promise<void>;
     signOut: () => Promise<void>;
 };
 
@@ -16,6 +18,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [session, setSession] = useState<Session | null>(null);
     const [user, setUser] = useState<User | null>(null);
+    const [isGuest, setIsGuest] = useState<boolean>(() => {
+        return localStorage.getItem('isGuest') === 'true';
+    });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -23,6 +28,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setUser(session?.user ?? null);
+            // If we have a session, we are definitely not a guest
+            if (session) {
+                setIsGuest(false);
+                localStorage.removeItem('isGuest');
+            }
             setLoading(false);
         });
 
@@ -30,6 +40,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
+            if (session) {
+                setIsGuest(false);
+                localStorage.removeItem('isGuest');
+            }
             setLoading(false);
             console.log('Auth state changed:', _event, session?.user?.email);
         });
@@ -53,16 +67,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return { error };
     };
 
+    const loginAsGuest = async () => {
+        setIsGuest(true);
+        localStorage.setItem('isGuest', 'true');
+    };
+
     const signOut = async () => {
         await supabase.auth.signOut();
+        setIsGuest(false);
+        localStorage.removeItem('isGuest');
     };
 
     const value = {
         session,
         user,
+        isGuest,
         loading,
         signInWithEmail,
         signUpWithEmail,
+        loginAsGuest,
         signOut,
     };
 
