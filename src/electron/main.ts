@@ -1,9 +1,18 @@
 import { app, BrowserWindow } from 'electron';
+import {isDev} from "./utils.js";
+import {getPreLoadPath, getUiPath} from "./pathResolver.js";
 
 app.on("ready", () => {
     const mainWindow = new BrowserWindow({
+        webPreferences: {
+            preload: getPreLoadPath(),
+        },
         autoHideMenuBar: true,
     });
 
-    mainWindow.loadURL('http://localhost:5173');
+    if (isDev()) {
+        mainWindow.loadURL('http://localhost:5123');
+    } else {
+        mainWindow.loadURL(getUiPath());
+    }
 })
