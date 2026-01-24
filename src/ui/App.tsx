@@ -1,12 +1,67 @@
 
-function App() {
-  return (
-    <>
-      <div>
-          <h1 className="text-3xl font-bold underline">Welcome to Neewal Recorder</h1>
-      </div>
-    </>
-  )
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Recorder from './pages/Recorder'; // We'll create this next
+import './index.css';
+import type {JSX} from "react";
+
+// Guard for protected routes
+function RequireAuth({ children }: { children: JSX.Element }) {
+  const { session, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center text-white">Loading...</div>;
+  }
+
+  if (!session) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
 }
 
-export default App
+// Guard for public routes (redirect to home if already logged in)
+function PublicOnly({ children }: { children: JSX.Element }) {
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center text-white">Loading...</div>;
+  }
+
+  if (session) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <HashRouter>
+        <Routes>
+          <Route path="/login" element={
+            <PublicOnly>
+              <Login />
+            </PublicOnly>
+          } />
+          <Route path="/signup" element={
+            <PublicOnly>
+              <Signup />
+            </PublicOnly>
+          } />
+          <Route path="/" element={
+            <RequireAuth>
+              <Recorder />
+            </RequireAuth>
+          } />
+        </Routes>
+      </HashRouter>
+    </AuthProvider>
+  );
+}
+
+export default App;
