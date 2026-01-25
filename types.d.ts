@@ -1,9 +1,25 @@
 import { Session, User } from '@supabase/supabase-js';
 import type * as React from 'react';
 
-export {};
+export { };
 
 declare global {
+    interface Window {
+        electron: {
+            selectDirectory: () => Promise<string | null>;
+            getDefaultSaveDirectory: () => Promise<string>;
+        };
+    }
+
+    interface SettingsModalProps {
+        isOpen: boolean;
+        onClose: () => void;
+        frameRate: number;
+        onFrameRateChange: (fps: number) => void;
+        saveDirectory: string;
+        onSelectDirectory: () => void;
+    }
+
     type AuthContextType = {
         session: Session | null;
         user: User | null;
@@ -42,6 +58,10 @@ declare global {
     interface SettingsModalProps {
         isOpen: boolean;
         onClose: () => void;
+        frameRate: number;
+        onFrameRateChange: (fps: number) => void;
+        saveDirectory: string;
+        onSelectDirectory: () => void;
     }
 
     type SourceMode = 'screen' | 'window' | 'region';

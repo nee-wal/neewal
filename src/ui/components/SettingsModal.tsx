@@ -1,13 +1,6 @@
 import { X, FolderOpen } from 'lucide-react';
 
-interface SettingsModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    frameRate: number;
-    onFrameRateChange: (fps: number) => void;
-}
-
-export function SettingsModal({ isOpen, onClose, frameRate, onFrameRateChange }: SettingsModalProps) {
+export function SettingsModal({ isOpen, onClose, frameRate, onFrameRateChange, saveDirectory, onSelectDirectory }: SettingsModalProps) {
     return (
         <div
             className={`fixed inset-0 bg-[var(--color-background-dark)]/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center transition-opacity duration-200 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -31,10 +24,13 @@ export function SettingsModal({ isOpen, onClose, frameRate, onFrameRateChange }:
                             <input
                                 type="text"
                                 readOnly
-                                value="~/Videos/RecOne"
+                                value={saveDirectory}
                                 className="w-full bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] rounded px-3 py-1.5 text-xs text-[var(--color-text-muted)] font-mono focus:outline-none"
                             />
-                            <button className="bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] rounded px-3 text-[var(--color-text-primary)] hover:bg-[var(--color-border-dark)] transition-colors cursor-pointer">
+                            <button
+                                onClick={onSelectDirectory}
+                                className="bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] rounded px-3 text-[var(--color-text-primary)] hover:bg-[var(--color-border-dark)] transition-colors cursor-pointer"
+                            >
                                 <FolderOpen className="w-3 h-3" />
                             </button>
                         </div>

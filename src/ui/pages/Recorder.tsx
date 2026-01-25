@@ -22,7 +22,29 @@ export default function Recorder() {
     const [systemActive, setSystemActive] = useState(false);
     const [format, setFormat] = useState('mp4');
     const [frameRate, setFrameRate] = useState(60);
+    const [saveDirectory, setSaveDirectory] = useState(() => {
+        return localStorage.getItem('saveDirectory') || '';
+    });
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    useEffect(() => {
+        if (!saveDirectory && window.electron && window.electron.getDefaultSaveDirectory) {
+            window.electron.getDefaultSaveDirectory().then(setSaveDirectory);
+        }
+    }, []);
+
+    const handleSelectDirectory = async () => {
+        if (window.electron && window.electron.selectDirectory) {
+            const path = await window.electron.selectDirectory();
+            if (path) {
+                setSaveDirectory(path);
+                localStorage.setItem('saveDirectory', path);
+            }
+        } else {
+            console.warn('Electron API not available');
+            alert('Directory selection is only available in the desktop app.');
+        }
+    };
 
     // Status text logic
     const [statusText, setStatusText] = useState('Ready to record');
@@ -171,6 +193,8 @@ export default function Recorder() {
                 onClose={() => setIsSettingsOpen(false)}
                 frameRate={frameRate}
                 onFrameRateChange={setFrameRate}
+                saveDirectory={saveDirectory}
+                onSelectDirectory={handleSelectDirectory}
             />
         </div>
     );
