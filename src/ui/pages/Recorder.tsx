@@ -1,13 +1,79 @@
+
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/Button';
+import { Settings2 } from 'lucide-react';
+import { RecordButton } from '../components/RecordButton';
+import { TimerDisplay } from '../components/TimerDisplay';
+import { SourceSelector } from '../components/SourceSelector';
+import { AudioControls } from '../components/AudioControls';
+import { FormatSelector } from '../components/FormatSelector';
+import { SettingsModal } from '../components/SettingsModal';
 
 export default function Recorder() {
     const { signOut, user, isGuest } = useAuth();
     const navigate = useNavigate();
 
+    const [isRecording, setIsRecording] = useState(false);
+    const [seconds, setSeconds] = useState(0);
+    const [sourceMode, setSourceMode] = useState<SourceMode>('screen');
+    const [micActive, setMicActive] = useState(true);
+    const [systemActive, setSystemActive] = useState(false);
+    const [format, setFormat] = useState('mp4');
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    // Status text logic
+    const [statusText, setStatusText] = useState('Ready to record');
+    const [statusColor, setStatusColor] = useState('text-[var(--color-primary)] bg-[var(--color-primary)]/10 border-[var(--color-primary)]/20');
+
+    const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const toggleRecording = () => {
+        if (!isRecording) {
+            // Start Recording
+            setIsRecording(true);
+            setStatusText('Recording...');
+            setStatusColor('text-[var(--color-record)] bg-[var(--color-record)]/10 border-[var(--color-record)]/20');
+
+            // Start Timer
+            setSeconds(0);
+            timerIntervalRef.current = setInterval(() => {
+                setSeconds(prev => prev + 1);
+            }, 1000);
+
+        } else {
+            // Stop Recording
+            setIsRecording(false);
+            setStatusText('Saving to ~/Videos...');
+            setStatusColor('text-[var(--color-primary)] bg-[var(--color-primary)]/10 border-[var(--color-primary)]/20');
+
+            // Stop Timer
+            if (timerIntervalRef.current) {
+                clearInterval(timerIntervalRef.current);
+                timerIntervalRef.current = null;
+            }
+
+            // Reset after delay
+            setTimeout(() => {
+                setStatusText('Ready to record');
+                setStatusColor('text-[var(--color-primary)] bg-[var(--color-primary)]/10 border-[var(--color-primary)]/20');
+                setSeconds(0);
+            }, 2000);
+        }
+    };
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (timerIntervalRef.current) {
+                clearInterval(timerIntervalRef.current);
+            }
+        };
+    }, []);
+
     return (
-        <div className="flex h-screen flex-col bg-[var(--color-background-dark)] text-[var(--color-text-primary)]">
+        <div className="flex h-screen flex-col bg-[var(--color-background-dark)] text-[var(--color-text-primary)] font-sans">
             <header
                 className="flex h-14 items-center justify-between border-b border-[var(--color-border-dark)] bg-[var(--color-surface-dark)] px-4">
                 <div className="flex items-center gap-2 font-semibold">
@@ -36,40 +102,70 @@ export default function Recorder() {
                 </div>
             </header>
 
-            <main className="flex flex-1 flex-col items-center justify-center p-8 text-center">
-                <h2 className="mb-2 text-2xl font-bold">Ready to Record</h2>
-                <p className="mb-8 text-[var(--color-text-muted)]">
-                    Configure your recording settings below.
-                </p>
+            <main className="flex flex-1 flex-col items-center justify-center p-8 bg-[var(--color-background-dark)]">
+                {/* Main Content Area (simulating the app body from the snippet) */}
+                <div className="w-[380px] bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] rounded-xl shadow-2xl overflow-hidden flex flex-col pt-4"> {/* Removed title bar, added pt-4 */}
 
-                {/* Placeholder controls matching requirements */}
-                <div
-                    className="flex w-full max-w-2xl flex-col gap-4 rounded-xl border border-[var(--color-border-dark)] bg-[var(--color-surface-dark)] p-6">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div
-                            className="flex h-32 items-center justify-center rounded-lg border border-dashed border-[var(--color-border-dark)] bg-black/20">
-                            Screen Selector (Coming Soon)
-                        </div>
-                        <div
-                            className="flex h-32 items-center justify-center rounded-lg border border-dashed border-[var(--color-border-dark)] bg-black/20">
-                            Audio Options (Coming Soon)
-                        </div>
+                    {/* Settings Trigger - Positioned absolutely or integrated */}
+                    <div className="absolute top-20 right-1/2 translate-x-[200px] hidden"> {/* Optional: Positioning might be tricky without relative parent */}
                     </div>
 
-                    <div className="mt-4 flex items-center justify-center gap-4">
-                        <div className="text-4xl font-mono text-[var(--color-text-primary)]">00:00:00</div>
-                    </div>
-
-                    <div className="mt-4 flex justify-center">
+                    <div className="px-4 pb-2 flex justify-end">
                         <button
-                            className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-record)] text-white shadow-lg transition-transform hover:scale-105 active:scale-95">
-                            <div className="h-6 w-6 rounded bg-white" />
-                            {/* Stop icon initially? Or Circle for record. Let's do huge red circle */}
+                            onClick={() => setIsSettingsOpen(true)}
+                            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+                            title="Settings"
+                        >
+                            <Settings2 className="w-5 h-5" />
                         </button>
                     </div>
-                    <div className="text-xs text-[var(--color-text-muted)]">Ide / Recording / Error</div>
+
+                    <div className="p-6 pt-0 flex flex-col items-center gap-6">
+
+                        {/* Status Indicator */}
+                        <div className="w-full text-center">
+                            <span className={`text-xs font-mono px-2 py-1 rounded border transition-colors duration-300 ${statusColor}`}>
+                                {statusText}
+                            </span>
+                        </div>
+
+                        {/* Timer Display */}
+                        <TimerDisplay seconds={seconds} />
+
+                        {/* Main Record Button */}
+                        <RecordButton
+                            isRecording={isRecording}
+                            onClick={toggleRecording}
+                        />
+
+                        {/* Divider */}
+                        <div className="w-full h-px bg-[var(--color-border-dark)]"></div>
+
+                        {/* Source Selector */}
+                        <SourceSelector
+                            selectedMode={sourceMode}
+                            onSelectMode={setSourceMode}
+                        />
+
+                        {/* Audio Controls */}
+                        <AudioControls
+                            micActive={micActive}
+                            onToggleMic={() => setMicActive(!micActive)}
+                            systemActive={systemActive}
+                            onToggleSystem={() => setSystemActive(!systemActive)}
+                        />
+
+                        {/* Format Selector */}
+                        <FormatSelector
+                            format={format}
+                            onFormatChange={setFormat}
+                        />
+
+                    </div>
                 </div>
             </main>
+
+            <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
         </div>
     );
 }
