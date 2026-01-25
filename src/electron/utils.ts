@@ -1,5 +1,6 @@
 import path from 'path';
 import os from 'os';
+import {ipcMain} from "electron";
 
 export const isDev = (): boolean => {
     return process.env.NODE_ENV === 'development';
@@ -17,3 +18,12 @@ export const getDefaultSaveDirectory = (): string => {
             return path.join(os.homedir(), 'Neewal');
     }
 }
+
+export const ipcMainHandle = <Key extends keyof EventPayloadMapping,>(
+    key: Key,
+    handler: () => Promise<EventPayloadMapping[Key]>
+) => {
+    ipcMain.handle(key, async () => {
+        return await handler(); // ← unwrap here
+    });
+};

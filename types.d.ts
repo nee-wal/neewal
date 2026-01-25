@@ -11,6 +11,11 @@ declare global {
         };
     }
 
+    type EventPayloadMapping = {
+        getDefaultSaveDirectory: string;
+        'dialog:selectDirectory': string | null;
+    }
+
     interface SettingsModalProps {
         isOpen: boolean;
         onClose: () => void;
