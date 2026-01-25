@@ -21,7 +21,18 @@ export default function Recorder() {
     const [micActive, setMicActive] = useState(true);
     const [systemActive, setSystemActive] = useState(false);
     const [format, setFormat] = useState('mp4');
-    const [frameRate, setFrameRate] = useState(60);
+    const [frameRate, setFrameRate] = useState(() => {
+        const saved = localStorage.getItem('frameRate');
+        return saved ? parseInt(saved, 10) : 60;
+    });
+    const [showCursor, setShowCursor] = useState(() => {
+        const saved = localStorage.getItem('showCursor');
+        return saved !== null ? saved === 'true' : true;
+    });
+    const [countdown, setCountdown] = useState(() => {
+        const saved = localStorage.getItem('countdown');
+        return saved !== null ? saved === 'true' : true;
+    });
     const [saveDirectory, setSaveDirectory] = useState(() => {
         return localStorage.getItem('saveDirectory') || '';
     });
@@ -44,6 +55,21 @@ export default function Recorder() {
             console.warn('Electron API not available');
             alert('Directory selection is only available in the desktop app.');
         }
+    };
+
+    const handleFrameRateChange = (fps: number) => {
+        setFrameRate(fps);
+        localStorage.setItem('frameRate', fps.toString());
+    };
+
+    const handleShowCursorChange = (show: boolean) => {
+        setShowCursor(show);
+        localStorage.setItem('showCursor', show.toString());
+    };
+
+    const handleCountdownChange = (enabled: boolean) => {
+        setCountdown(enabled);
+        localStorage.setItem('countdown', enabled.toString());
     };
 
     // Status text logic
@@ -192,9 +218,13 @@ export default function Recorder() {
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
                 frameRate={frameRate}
-                onFrameRateChange={setFrameRate}
+                onFrameRateChange={handleFrameRateChange}
                 saveDirectory={saveDirectory}
                 onSelectDirectory={handleSelectDirectory}
+                showCursor={showCursor}
+                onShowCursorChange={handleShowCursorChange}
+                countdown={countdown}
+                onCountdownChange={handleCountdownChange}
             />
         </div>
     );

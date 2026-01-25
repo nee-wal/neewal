@@ -1,6 +1,17 @@
 import { X, FolderOpen } from 'lucide-react';
 
-export function SettingsModal({ isOpen, onClose, frameRate, onFrameRateChange, saveDirectory, onSelectDirectory }: SettingsModalProps) {
+export function SettingsModal({
+    isOpen,
+    onClose,
+    frameRate,
+    onFrameRateChange,
+    saveDirectory,
+    onSelectDirectory,
+    showCursor,
+    onShowCursorChange,
+    countdown,
+    onCountdownChange
+}: SettingsModalProps) {
     return (
         <div
             className={`fixed inset-0 bg-[var(--color-background-dark)]/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center transition-opacity duration-200 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -43,7 +54,12 @@ export function SettingsModal({ isOpen, onClose, frameRate, onFrameRateChange, s
                             <div className="text-[10px] text-[var(--color-text-muted)]">Capture mouse pointer</div>
                         </div>
                         <label className="flex items-center cursor-pointer relative">
-                            <input type="checkbox" className="sr-only peer" defaultChecked />
+                            <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={showCursor}
+                                onChange={(e) => onShowCursorChange(e.target.checked)}
+                            />
                             <div className="w-9 h-5 bg-[var(--color-border-dark)] rounded-full peer peer-checked:bg-[var(--color-primary)] peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
                         </label>
                     </div>
@@ -55,7 +71,12 @@ export function SettingsModal({ isOpen, onClose, frameRate, onFrameRateChange, s
                             <div className="text-[10px] text-[var(--color-text-muted)]">3s delay before start</div>
                         </div>
                         <label className="flex items-center cursor-pointer relative">
-                            <input type="checkbox" className="sr-only peer" defaultChecked />
+                            <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={countdown}
+                                onChange={(e) => onCountdownChange(e.target.checked)}
+                            />
                             <div className="w-9 h-5 bg-[var(--color-border-dark)] rounded-full peer peer-checked:bg-[var(--color-primary)] peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
                         </label>
                     </div>

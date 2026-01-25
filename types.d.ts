@@ -67,6 +67,10 @@ declare global {
         onFrameRateChange: (fps: number) => void;
         saveDirectory: string;
         onSelectDirectory: () => void;
+        showCursor: boolean;
+        onShowCursorChange: (show: boolean) => void;
+        countdown: boolean;
+        onCountdownChange: (enabled: boolean) => void;
     }
 
     type SourceMode = 'screen' | 'window' | 'region';
