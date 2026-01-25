@@ -21,6 +21,7 @@ export default function Recorder() {
     const [micActive, setMicActive] = useState(true);
     const [systemActive, setSystemActive] = useState(false);
     const [format, setFormat] = useState('mp4');
+    const [frameRate, setFrameRate] = useState(60);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     // Status text logic
@@ -165,7 +166,12 @@ export default function Recorder() {
                 </div>
             </main>
 
-            <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+            <SettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                frameRate={frameRate}
+                onFrameRateChange={setFrameRate}
+            />
         </div>
     );
 }

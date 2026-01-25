@@ -1,6 +1,13 @@
 import { X, FolderOpen } from 'lucide-react';
 
-export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+interface SettingsModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    frameRate: number;
+    onFrameRateChange: (fps: number) => void;
+}
+
+export function SettingsModal({ isOpen, onClose, frameRate, onFrameRateChange }: SettingsModalProps) {
     return (
         <div
             className={`fixed inset-0 bg-[var(--color-background-dark)]/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center transition-opacity duration-200 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -61,9 +68,18 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <div className="space-y-2 pt-2 border-t border-[var(--color-border-dark)]">
                         <label className="text-xs font-medium text-[var(--color-text-primary)] block">Frame Rate</label>
                         <div className="grid grid-cols-3 gap-2">
-                            <button className="py-1 rounded bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-muted)] cursor-pointer">30 FPS</button>
-                            <button className="py-1 rounded bg-[var(--color-primary)]/10 border border-[var(--color-primary)] text-[10px] text-[var(--color-primary)] font-medium cursor-pointer">60 FPS</button>
-                            <button className="py-1 rounded bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-muted)] cursor-pointer">120 FPS</button>
+                            {[30, 60, 120].map((fps) => (
+                                <button
+                                    key={fps}
+                                    onClick={() => onFrameRateChange(fps)}
+                                    className={`py-1 rounded text-[10px] font-medium cursor-pointer border transition-colors ${frameRate === fps
+                                        ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)] text-[var(--color-primary)]'
+                                        : 'bg-[var(--color-surface-dark)] border-[var(--color-border-dark)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-muted)]'
+                                        }`}
+                                >
+                                    {fps} FPS
+                                </button>
+                            ))}
                         </div>
                     </div>
 
