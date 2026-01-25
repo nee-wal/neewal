@@ -1,21 +1,57 @@
 import { Session, User } from '@supabase/supabase-js';
-import React from 'react';
+import type * as React from 'react';
 
+export {};
 
-type AuthContextType = {
-    session: Session | null;
-    user: User | null;
-    isGuest: boolean;
-    loading: boolean;
-    signInWithEmail: (email: string, password: string) => Promise<{ error: any }>;
-    signUpWithEmail: (email: string, password: string) => Promise<{ error: any }>;
-    loginAsGuest: () => Promise<void>;
-    signOut: () => Promise<void>;
-};
+declare global {
+    type AuthContextType = {
+        session: Session | null;
+        user: User | null;
+        isGuest: boolean;
+        loading: boolean;
+        signInWithEmail: (email: string, password: string) => Promise<{ error: any }>;
+        signUpWithEmail: (email: string, password: string) => Promise<{ error: any }>;
+        loginAsGuest: () => Promise<void>;
+        signOut: () => Promise<void>;
+    };
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'default' | 'outline' | 'ghost' | 'link';
-    size?: 'default' | 'sm' | 'lg' | 'icon';
+    interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+        variant?: 'default' | 'outline' | 'ghost' | 'link';
+        size?: 'default' | 'sm' | 'lg' | 'icon';
+    }
+
+    type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
+
+    interface AudioControlsProps {
+        micActive: boolean;
+        onToggleMic: () => void;
+        systemActive: boolean;
+        onToggleSystem: () => void;
+    }
+
+    interface FormatSelectorProps {
+        format: string;
+        onFormatChange: (format: string) => void;
+    }
+
+    interface RecordButtonProps {
+        isRecording: boolean;
+        onClick: () => void;
+    }
+
+    interface SettingsModalProps {
+        isOpen: boolean;
+        onClose: () => void;
+    }
+
+    type SourceMode = 'screen' | 'window' | 'region';
+
+    interface SourceSelectorProps {
+        selectedMode: SourceMode;
+        onSelectMode: (mode: SourceMode) => void;
+    }
+
+    interface TimerDisplayProps {
+        seconds: number;
+    }
 }
-
-type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
