@@ -69,7 +69,14 @@ app.on("ready", () => {
                         return;
                     }
 
-                    const outputFilename = `recording_${Date.now()}.mp4`;
+                    const now = new Date();
+                    const yyyy = now.getFullYear();
+                    const mm = String(now.getMonth() + 1).padStart(2, '0');
+                    const dd = String(now.getDate()).padStart(2, '0');
+                    const h = String(now.getHours()).padStart(2, '0');
+                    const m = String(now.getMinutes()).padStart(2, '0');
+                    const s = String(now.getSeconds()).padStart(2, '0');
+                    const outputFilename = `Neewal_${yyyy}-${mm}-${dd}_${h}-${m}-${s}.mp4`;
                     const outputPath = join(saveDir, outputFilename);
 
                     // Allow ffmpeg path to be configurable or found in path
