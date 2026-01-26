@@ -150,7 +150,7 @@ export default function Recorder() {
                     await audioContext.resume();
                 }
 
-                if (desktopStream.getAudioTracks().length > 0) {
+                if (systemActive && desktopStream.getAudioTracks().length > 0) {
                     const desktopSource = audioContext.createMediaStreamSource(desktopStream);
                     desktopSource.connect(destination);
                     hasAudio = true;
