@@ -126,19 +126,46 @@ export default function Recorder() {
                 let micStream: MediaStream | null = null;
                 if (micActive) {
                     try {
-                        micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                        micStream = await navigator.mediaDevices.getUserMedia({
+                            audio: {
+                                echoCancellation: true,
+                                noiseSuppression: true,
+                                autoGainControl: false // Sometimes helpful for music/high quality, but check
+                            },
+                            video: false
+                        });
                     } catch (err) {
                         console.warn("Could not get microphone stream", err);
                     }
                 }
 
-                // Combine tracks
-                const tracks = [
-                    ...desktopStream.getVideoTracks(),
-                    ...desktopStream.getAudioTracks()
-                ];
-                if (micStream) {
-                    tracks.push(...micStream.getAudioTracks());
+                // Combine tracks using Web Audio API for better mixing if multiple audio sources exist
+                const tracks = [...desktopStream.getVideoTracks()];
+                const audioContext = new AudioContext();
+                const destination = audioContext.createMediaStreamDestination();
+                let hasAudio = false;
+
+                // Explicitly resume context (required in some browsers/Electron environments)
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+
+                if (desktopStream.getAudioTracks().length > 0) {
+                    const desktopSource = audioContext.createMediaStreamSource(desktopStream);
+                    desktopSource.connect(destination);
+                    hasAudio = true;
+                } else if (systemActive) {
+                    console.warn("System audio requested but no audio tracks found in desktop stream. Check OS permissions/capabilities.");
+                }
+
+                if (micStream && micStream.getAudioTracks().length > 0) {
+                    const micSource = audioContext.createMediaStreamSource(micStream);
+                    micSource.connect(destination);
+                    hasAudio = true;
+                }
+
+                if (hasAudio) {
+                    tracks.push(...destination.stream.getAudioTracks());
                 }
 
                 const combinedStream = new MediaStream(tracks);
