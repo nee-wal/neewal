@@ -1,6 +1,6 @@
 import path from 'path';
 import os from 'os';
-import {ipcMain} from "electron";
+import { ipcMain } from "electron";
 
 export const isDev = (): boolean => {
     return process.env.NODE_ENV === 'development';

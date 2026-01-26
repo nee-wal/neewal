@@ -78,23 +78,121 @@ export default function Recorder() {
 
     const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    const toggleRecording = () => {
-        if (!isRecording) {
-            // Start Recording
-            setIsRecording(true);
-            setStatusText('Recording...');
-            setStatusColor('text-[var(--color-record)] bg-[var(--color-record)]/10 border-[var(--color-record)]/20');
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const streamRef = useRef<MediaStream | null>(null);
 
-            // Start Timer
-            setSeconds(0);
-            timerIntervalRef.current = setInterval(() => {
-                setSeconds(prev => prev + 1);
-            }, 1000);
+    const toggleRecording = async () => {
+        if (!isRecording) {
+            try {
+                // 1. Get Sources
+                if (!window.electron || !window.electron.getSources) {
+                    alert("Electron APIs not available");
+                    return;
+                }
+                const sources = await window.electron.getSources();
+                console.log('Available sources:', sources);
+
+                // Hardcoded: Pick first window that isn't us (or just first window)
+                // Filter for 'window'.
+                const windowSource = sources.find((s: any) => s.id.startsWith('window'));
+                const sourceId = windowSource ? windowSource.id : sources[0]?.id;
+
+                if (!sourceId) {
+                    alert("No source found to record");
+                    return;
+                }
+
+                // 2. Get Streams
+                // Video + System Audio
+                const constraints: any = {
+                    audio: systemActive ? {
+                        mandatory: {
+                            chromeMediaSource: 'desktop'
+                        }
+                    } : false,
+                    video: {
+                        mandatory: {
+                            chromeMediaSource: 'desktop',
+                            chromeMediaSourceId: sourceId,
+                            minFrameRate: frameRate,
+                            maxFrameRate: frameRate
+                        }
+                    }
+                };
+
+                const desktopStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                // Microphone
+                let micStream: MediaStream | null = null;
+                if (micActive) {
+                    try {
+                        micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                    } catch (err) {
+                        console.warn("Could not get microphone stream", err);
+                    }
+                }
+
+                // Combine tracks
+                const tracks = [
+                    ...desktopStream.getVideoTracks(),
+                    ...desktopStream.getAudioTracks()
+                ];
+                if (micStream) {
+                    tracks.push(...micStream.getAudioTracks());
+                }
+
+                const combinedStream = new MediaStream(tracks);
+                streamRef.current = combinedStream;
+
+                // 3. Initialize Recording in Main
+                await window.electron.startRecording();
+
+                // 4. Create MediaRecorder
+                // Try H.264 for better MP4 compatibility later
+                const mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=h264')
+                    ? 'video/webm; codecs=h264'
+                    : 'video/webm'; // Fallback
+
+                const recorder = new MediaRecorder(combinedStream, { mimeType });
+                mediaRecorderRef.current = recorder;
+
+                recorder.ondataavailable = async (e) => {
+                    if (e.data.size > 0) {
+                        const buffer = await e.data.arrayBuffer();
+                        window.electron.saveChunk(buffer);
+                    }
+                };
+
+                recorder.start(1000); // 1-second chunks
+
+                // Start UI State
+                setIsRecording(true);
+                setStatusText('Recording...');
+                setStatusColor('text-[var(--color-record)] bg-[var(--color-record)]/10 border-[var(--color-record)]/20');
+
+                // Start Timer
+                setSeconds(0);
+                timerIntervalRef.current = setInterval(() => {
+                    setSeconds(prev => prev + 1);
+                }, 1000);
+
+            } catch (err) {
+                console.error("Failed to start recording:", err);
+                alert("Failed to start recording. See console for details.");
+            }
 
         } else {
             // Stop Recording
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                mediaRecorderRef.current.stop();
+            }
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+            }
+
+            // UI Feedback immediately
             setIsRecording(false);
-            setStatusText('Saving to ~/Videos...');
+            setStatusText('Processing...');
             setStatusColor('text-[var(--color-primary)] bg-[var(--color-primary)]/10 border-[var(--color-primary)]/20');
 
             // Stop Timer
@@ -103,12 +201,20 @@ export default function Recorder() {
                 timerIntervalRef.current = null;
             }
 
-            // Reset after delay
-            setTimeout(() => {
-                setStatusText('Ready to record');
-                setStatusColor('text-[var(--color-primary)] bg-[var(--color-primary)]/10 border-[var(--color-primary)]/20');
-                setSeconds(0);
-            }, 2000);
+            setTimeout(async () => {
+                const path = await window.electron.stopRecording(saveDirectory || await window.electron.getDefaultSaveDirectory());
+                if (path) {
+                    setStatusText(`Saved to ${path.split('/').pop()}`);
+                } else {
+                    setStatusText('Save failed');
+                }
+
+                setTimeout(() => {
+                    setStatusText('Ready to record');
+                    setStatusColor('text-[var(--color-primary)] bg-[var(--color-primary)]/10 border-[var(--color-primary)]/20');
+                    setSeconds(0);
+                }, 3000);
+            }, 500);
         }
     };
 

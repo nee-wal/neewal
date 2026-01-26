@@ -8,12 +8,29 @@ declare global {
         electron: {
             selectDirectory: () => Promise<string | null>;
             getDefaultSaveDirectory: () => Promise<string>;
+            getSources: () => Promise<any[]>; // returning basic DesktopCapturerSource[]
+            startRecording: () => Promise<string>;
+            saveChunk: (chunk: ArrayBuffer) => Promise<void>;
+            stopRecording: (saveDir: string) => Promise<string | null>;
         };
     }
 
     type EventPayloadMapping = {
         getDefaultSaveDirectory: string;
         'dialog:selectDirectory': string | null;
+        'getSources': any[];
+        'startRecording': string;
+        'stopRecording': string | null;
+        'saveChunk': void;
+    }
+
+    type EventParamsMapping = {
+        getDefaultSaveDirectory: [];
+        'dialog:selectDirectory': [];
+        'getSources': [];
+        'startRecording': [];
+        'stopRecording': [string];
+        'saveChunk': [ArrayBuffer];
     }
 
     interface SettingsModalProps {
