@@ -203,9 +203,32 @@ export default function Recorder() {
                     setSeconds(prev => prev + 1);
                 }, 1000);
 
-            } catch (err) {
-                console.error("Failed to start recording:", err);
-                alert("Failed to start recording. See console for details.");
+            } catch (err: any) {
+                if (err.name === 'NotAllowedError' || err.message.includes('Permission denied')) {
+                    console.log('Recording cancelled by user');
+                    setStatusText('Selection cancelled');
+                    setTimeout(() => {
+                        setStatusText('Ready to record');
+                        setStatusColor('text-[var(--color-primary)] bg-[var(--color-primary)]/10 border-[var(--color-primary)]/20');
+                    }, 2000);
+
+                    // Cleanup
+                    setIsRecording(false);
+                    if (timerIntervalRef.current) {
+                        clearInterval(timerIntervalRef.current);
+                        timerIntervalRef.current = null;
+                    }
+                } else {
+                    console.error("Failed to start recording:", err);
+                    // alert("Failed to start recording. See console for details.");
+
+                    // Cleanup
+                    setIsRecording(false);
+                    if (timerIntervalRef.current) {
+                        clearInterval(timerIntervalRef.current);
+                        timerIntervalRef.current = null;
+                    }
+                }
             }
 
         } else {
