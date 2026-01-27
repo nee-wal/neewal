@@ -23,7 +23,8 @@ export default function Recorder() {
     const [format, setFormat] = useState('mp4');
     const [frameRate, setFrameRate] = useState(() => {
         const saved = localStorage.getItem('frameRate');
-        return saved ? parseInt(saved, 10) : 60;
+        const parsed = saved ? parseInt(saved, 10) : 60;
+        return isNaN(parsed) ? 60 : parsed;
     });
     const [showCursor, setShowCursor] = useState(() => {
         const saved = localStorage.getItem('showCursor');
@@ -92,10 +93,10 @@ export default function Recorder() {
                 const sources = await window.electron.getSources();
                 console.log('Available sources:', sources);
 
-                // Hardcoded: Pick first window that isn't us (or just first window)
-                // Filter for 'window'.
-                const windowSource = sources.find((s: any) => s.id.startsWith('window'));
-                const sourceId = windowSource ? windowSource.id : sources[0]?.id;
+                // Select source based on current mode
+                const targetType = sourceMode === 'window' ? 'window' : 'screen';
+                const selectedSource = sources.find((s: any) => s.id.startsWith(targetType));
+                const sourceId = selectedSource ? selectedSource.id : sources[0]?.id;
 
                 if (!sourceId) {
                     alert("No source found to record");
@@ -175,12 +176,27 @@ export default function Recorder() {
                 await window.electron.startRecording();
 
                 // 4. Create MediaRecorder
-                // Try H.264 for better MP4 compatibility later
-                const mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=h264')
-                    ? 'video/webm; codecs=h264'
-                    : 'video/webm'; // Fallback
+                // Prefer VP9 for better quality, fallback to VP8, then H.264
+                let mimeType = 'video/webm';
+                if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) {
+                    mimeType = 'video/webm; codecs=vp9';
+                } else if (MediaRecorder.isTypeSupported('video/webm; codecs=vp8')) {
+                    mimeType = 'video/webm; codecs=vp8';
+                } else if (MediaRecorder.isTypeSupported('video/webm; codecs=h264')) {
+                    mimeType = 'video/webm; codecs=h264';
+                }
 
-                const recorder = new MediaRecorder(combinedStream, { mimeType });
+                // Calculate bitrate based on frame rate
+                // Higher frame rates need more bitrate for quality
+                // Base: 2.5Mbps for 30fps, scale proportionally
+                const videoBitsPerSecond = Math.floor((frameRate / 30) * 2500000);
+                const audioBitsPerSecond = 128000; // 128kbps for audio
+
+                const recorder = new MediaRecorder(combinedStream, {
+                    mimeType,
+                    videoBitsPerSecond,
+                    audioBitsPerSecond
+                });
                 mediaRecorderRef.current = recorder;
 
                 recorder.ondataavailable = async (e) => {
