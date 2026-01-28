@@ -18,7 +18,7 @@ app.on("ready", () => {
     });
 
     // Handle automatic source selection for getDisplayMedia
-    mainWindow.webContents.session.setDisplayMediaRequestHandler((request, callback) => {
+    mainWindow.webContents.session.setDisplayMediaRequestHandler((_request, callback) => {
         desktopCapturer.getSources({ types: ['screen', 'window'] }).then((sources) => {
             if (pendingSourceId) {
                 const source = sources.find(s => s.id === pendingSourceId);
@@ -83,13 +83,13 @@ app.on("ready", () => {
         return tempFilePath;
     });
 
-    ipcMain.handle('saveChunk', async (event, arrayBuffer) => {
+    ipcMain.handle('saveChunk', async (_event, arrayBuffer) => {
         if (recordingStream) {
             recordingStream.write(Buffer.from(arrayBuffer));
         }
     });
 
-    ipcMain.handle('stopRecording', async (event, saveDir: string) => {
+    ipcMain.handle('stopRecording', async (_event, saveDir: string) => {
         return new Promise((resolve, reject) => {
             if (recordingStream) {
                 recordingStream.end(async () => {
@@ -215,7 +215,7 @@ app.on("ready", () => {
 
     let pendingSourceId: string | null = null;
 
-    ipcMain.handle('prepareRecording', async (event, id: string) => {
+    ipcMain.handle('prepareRecording', async (_event, id: string) => {
         pendingSourceId = id;
         return true;
     });
@@ -228,7 +228,7 @@ app.on("ready", () => {
         return true;
     });
 
-    ipcMain.handle('regionSelected', async (_event: any, region: { x: number; y: number; width: number; height: number }) => {
+    ipcMain.handle('regionSelected', async (_event, region: Region) => {
         if (regionSelectorWindow) {
             regionSelectorWindow.close();
             regionSelectorWindow = null;

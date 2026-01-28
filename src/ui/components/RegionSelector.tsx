@@ -59,18 +59,18 @@ export function RegionSelector({ isOpen, onRegionSelect, onCancel }: RegionSelec
         }
     };
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-            onCancel();
-        }
-    };
-
     useEffect(() => {
         if (isOpen) {
+            const handleKeyDown = (e: KeyboardEvent) => {
+                if (e.key === 'Escape') {
+                    onCancel();
+                }
+            };
+
             window.addEventListener('keydown', handleKeyDown);
             return () => window.removeEventListener('keydown', handleKeyDown);
         }
-    }, [isOpen]);
+    }, [isOpen, onCancel]);
 
     if (!isOpen) return null;
 

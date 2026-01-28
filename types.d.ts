@@ -4,12 +4,43 @@ import type * as React from 'react';
 export { };
 
 declare global {
+    // Electron Desktop Capturer Source
+    interface DesktopCapturerSource {
+        id: string;
+        name: string;
+        thumbnail: {
+            toDataURL: () => string;
+        };
+    }
+
+    // Media Stream Constraints for recording
+    interface RecordingConstraints extends MediaStreamConstraints {
+        audio: boolean | {
+            mandatory: {
+                chromeMediaSource: 'desktop';
+            };
+        };
+        video: {
+            mandatory: {
+                chromeMediaSource: 'desktop';
+                chromeMediaSourceId: string;
+                minFrameRate: number;
+                maxFrameRate: number;
+            };
+        };
+    }
+
+    // Extended MediaStream with cleanup function
+    interface ExtendedMediaStream extends MediaStream {
+        _cleanupCanvas?: () => void;
+    }
+
     interface Window {
         electron: {
             selectDirectory: () => Promise<string | null>;
             getDefaultSaveDirectory: () => Promise<string>;
-            getSources: () => Promise<any[]>; // returning basic DesktopCapturerSource[]
-            getPrimaryScreen: () => Promise<any | null>;
+            getSources: () => Promise<DesktopCapturerSource[]>;
+            getPrimaryScreen: () => Promise<DesktopCapturerSource | null>;
             startRecording: () => Promise<string>;
             saveChunk: (chunk: ArrayBuffer) => Promise<void>;
             stopRecording: (saveDir: string) => Promise<string | null>;
@@ -25,8 +56,8 @@ declare global {
     type EventPayloadMapping = {
         getDefaultSaveDirectory: string;
         'dialog:selectDirectory': string | null;
-        'getSources': any[];
-        'getPrimaryScreen': any | null;
+        'getSources': DesktopCapturerSource[];
+        'getPrimaryScreen': DesktopCapturerSource | null;
         'startRecording': string;
         'stopRecording': string | null;
         'saveChunk': void;
@@ -66,8 +97,8 @@ declare global {
         user: User | null;
         isGuest: boolean;
         loading: boolean;
-        signInWithEmail: (email: string, password: string) => Promise<{ error: any }>;
-        signUpWithEmail: (email: string, password: string) => Promise<{ error: any }>;
+        signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
+        signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
         loginAsGuest: () => Promise<void>;
         signOut: () => Promise<void>;
     };

@@ -1,4 +1,3 @@
-
 export function FormatSelector({ format, onFormatChange }: FormatSelectorProps) {
     return (
         <div className="w-full flex items-center justify-between px-1">
