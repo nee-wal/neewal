@@ -5,10 +5,17 @@ export default function RegionSelectorPage() {
     const [isSelecting, setIsSelecting] = useState(false);
     const [startPos, setStartPos] = useState({ x: 0, y: 0 });
     const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
+    const [bgImage, setBgImage] = useState<string | null>(null);
     const overlayRef = useRef<HTMLDivElement>(null);
 
     const handleMouseDown = (e: React.MouseEvent) => {
-        if (e.target !== overlayRef.current) return;
+        // Allow clicking on the overlay or the dimmer (which is visually the overlay)
+        // Check if target is overlayRef or the dimmer child
+        // Since we will change structure, we need to be careful.
+        // Easiest is to attach handler to the wrapper and check containment.
+        // Or simply: if dragging starts, it starts.
+        // Only ignore if clicking on a button.
+        if ((e.target as HTMLElement).closest('button')) return;
 
         const x = e.clientX;
         const y = e.clientY;
@@ -59,6 +66,13 @@ export default function RegionSelectorPage() {
     };
 
     useEffect(() => {
+        // Fetch screenshot if available (Wayland fix)
+        if (window.electron && window.electron.getRegionBackground) {
+            window.electron.getRegionBackground().then(img => {
+                if (img) setBgImage(img);
+            });
+        }
+
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
@@ -73,23 +87,29 @@ export default function RegionSelectorPage() {
     return (
         <div
             ref={overlayRef}
-            className="fixed inset-0 z-50 cursor-crosshair"
+            className="fixed inset-0 z-50 cursor-crosshair select-none"
             style={{
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                backgroundImage: bgImage ? `url(${bgImage})` : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'top left',
+                backgroundColor: 'transparent'
             }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
         >
+            {/* Dimmer Overlay - simulates transparency on opaque windows */}
+            <div className="absolute inset-0 bg-black/50 pointer-events-none" />
+
             {/* Instructions */}
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] rounded-lg px-6 py-3 shadow-2xl">
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] rounded-lg px-6 py-3 shadow-2xl">
                 <div className="flex items-center gap-4">
                     <p className="text-[var(--color-text-primary)] text-sm font-medium">
                         Click and drag to select recording area
                     </p>
                     <button
                         onClick={handleCancel}
-                        className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                        className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors pointer-events-auto"
                         title="Cancel (ESC)"
                     >
                         <X className="w-5 h-5" />
@@ -103,9 +123,28 @@ export default function RegionSelectorPage() {
             {/* Selection Box */}
             {(isSelecting || (selectionBox.width > 0 && selectionBox.height > 0)) && (
                 <>
-                    {/* Selection rectangle */}
+                    {/* Clear selection area (cutout effect if possible, otherwise just highlight) */}
+                    {/* Since we have an opaque screenshot, we can't easily cutout. 
+                        But we can draw the original image freely inside the box to simulate "clear" selection! */}
+
+                    {bgImage && (
+                        <div
+                            className="absolute z-0 pointer-events-none"
+                            style={{
+                                left: `${selectionBox.left}px`,
+                                top: `${selectionBox.top}px`,
+                                width: `${selectionBox.width}px`,
+                                height: `${selectionBox.height}px`,
+                                backgroundImage: `url(${bgImage})`,
+                                backgroundSize: `${window.innerWidth}px ${window.innerHeight}px`, // Ensure sizing matches viewport
+                                backgroundPosition: `-${selectionBox.left}px -${selectionBox.top}px`
+                            }}
+                        />
+                    )}
+
+                    {/* Selection rectangle border & handles */}
                     <div
-                        className="absolute border-2 border-[var(--color-primary)] bg-[var(--color-primary)]/10"
+                        className="absolute z-10 border-2 border-[var(--color-primary)]"
                         style={{
                             left: `${selectionBox.left}px`,
                             top: `${selectionBox.top}px`,
@@ -115,7 +154,7 @@ export default function RegionSelectorPage() {
                         }}
                     >
                         {/* Dimension display */}
-                        <div className="absolute -top-8 left-0 bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] rounded px-2 py-1 text-xs text-[var(--color-text-primary)] font-mono">
+                        <div className="absolute -top-8 left-0 bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] rounded px-2 py-1 text-xs text-[var(--color-text-primary)] font-mono whitespace-nowrap">
                             {Math.round(selectionBox.width)} × {Math.round(selectionBox.height)}
                         </div>
 

@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electron', {
         ipcRenderer.on('region-selected', (_event: any, region: any) => callback(region));
     },
     prepareRecording: (id: string) => ipcInvoke('prepareRecording', id),
+    getRegionBackground: () => ipcInvoke('getRegionBackground'),
 } satisfies Window['electron']);
 
 const ipcInvoke = <Key extends keyof EventPayloadMapping>(

@@ -18,6 +18,7 @@ declare global {
             regionSelected: (region: Region) => Promise<boolean>;
             onRegionSelected: (callback: (region: Region) => void) => void;
             prepareRecording: (id: string) => Promise<boolean>;
+            getRegionBackground: () => Promise<string | null>;
         };
     }
 
@@ -33,6 +34,7 @@ declare global {
         'closeRegionSelector': boolean;
         'regionSelected': boolean;
         'prepareRecording': boolean;
+        'getRegionBackground': string | null;
     }
 
     type EventParamsMapping = {
@@ -47,6 +49,7 @@ declare global {
         'closeRegionSelector': [];
         'regionSelected': [Region];
         'prepareRecording': [string];
+        'getRegionBackground': [];
     }
 
     interface SettingsModalProps {

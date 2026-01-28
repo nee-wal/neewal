@@ -146,8 +146,15 @@ app.on("ready", () => {
         });
     });
 
+
+
     // Region selector window
     let regionSelectorWindow: BrowserWindow | null = null;
+    let regionScreenshot: string | null = null;
+
+    ipcMainHandle('getRegionBackground', async () => {
+        return regionScreenshot;
+    });
 
     ipcMainHandle('openRegionSelector', async () => {
         if (regionSelectorWindow) {
@@ -156,6 +163,22 @@ app.on("ready", () => {
 
         const primaryDisplay = screen.getPrimaryDisplay();
         const { width, height } = primaryDisplay.bounds;
+
+        // Capture screenshot for background
+        try {
+            const sources = await desktopCapturer.getSources({
+                types: ['screen'],
+                thumbnailSize: { width, height }
+            });
+            // Assuming the first screen is primary for now or matching display logic
+            // On Linux/Wayland primary display detection can be tricky, but usually sources[0] is strictly the main one provided by pipewire portal if available, or X11 root.
+            if (sources.length > 0) {
+                regionScreenshot = sources[0].thumbnail.toDataURL();
+            }
+        } catch (error) {
+            console.error('Failed to capture screen for background:', error);
+            regionScreenshot = null;
+        }
 
         regionSelectorWindow = new BrowserWindow({
             width,
