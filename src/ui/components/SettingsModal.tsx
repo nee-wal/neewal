@@ -48,20 +48,27 @@ export function SettingsModal({
                     </div>
 
                     {/* Setting Item: Cursor */}
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <div className="text-xs font-medium text-[var(--color-text-primary)]">Show Cursor</div>
-                            <div className="text-[10px] text-[var(--color-text-muted)]">Capture mouse pointer</div>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-xs font-medium text-[var(--color-text-primary)]">Show Cursor</div>
+                                <div className="text-[10px] text-[var(--color-text-muted)]">Capture mouse pointer</div>
+                            </div>
+                            <label className="flex items-center cursor-pointer relative">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={showCursor}
+                                    onChange={(e) => onShowCursorChange(e.target.checked)}
+                                />
+                                <div className="w-9 h-5 bg-[var(--color-border-dark)] rounded-full peer peer-checked:bg-[var(--color-primary)] peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                            </label>
                         </div>
-                        <label className="flex items-center cursor-pointer relative">
-                            <input
-                                type="checkbox"
-                                className="sr-only peer"
-                                checked={showCursor}
-                                onChange={(e) => onShowCursorChange(e.target.checked)}
-                            />
-                            <div className="w-9 h-5 bg-[var(--color-border-dark)] rounded-full peer peer-checked:bg-[var(--color-primary)] peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
-                        </label>
+                        <div className="bg-amber-500/10 border border-amber-500/20 rounded px-3 py-2">
+                            <p className="text-[10px] text-amber-400/90 leading-relaxed">
+                                ⚠️ Note: Cursor hiding is not supported on Linux due to system limitations. The cursor will always be visible in recordings.
+                            </p>
+                        </div>
                     </div>
 
                     {/* Setting Item: Countdown */}
