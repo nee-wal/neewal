@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Recorder from './pages/Recorder'; // We'll create this next
+import RegionSelectorPage from './pages/RegionSelectorPage';
 import './index.css';
 import type { JSX } from "react";
 
@@ -54,6 +55,7 @@ function App() {
               <Signup />
             </PublicOnly>
           } />
+          <Route path="/region-selector" element={<RegionSelectorPage />} />
           <Route path="/" element={
             <RequireAuth>
               <Recorder />
