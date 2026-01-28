@@ -9,9 +9,15 @@ declare global {
             selectDirectory: () => Promise<string | null>;
             getDefaultSaveDirectory: () => Promise<string>;
             getSources: () => Promise<any[]>; // returning basic DesktopCapturerSource[]
+            getPrimaryScreen: () => Promise<any | null>;
             startRecording: () => Promise<string>;
             saveChunk: (chunk: ArrayBuffer) => Promise<void>;
             stopRecording: (saveDir: string) => Promise<string | null>;
+            openRegionSelector: () => Promise<boolean>;
+            closeRegionSelector: () => Promise<boolean>;
+            regionSelected: (region: Region) => Promise<boolean>;
+            onRegionSelected: (callback: (region: Region) => void) => void;
+            prepareRecording: (id: string) => Promise<boolean>;
         };
     }
 
@@ -19,18 +25,28 @@ declare global {
         getDefaultSaveDirectory: string;
         'dialog:selectDirectory': string | null;
         'getSources': any[];
+        'getPrimaryScreen': any | null;
         'startRecording': string;
         'stopRecording': string | null;
         'saveChunk': void;
+        'openRegionSelector': boolean;
+        'closeRegionSelector': boolean;
+        'regionSelected': boolean;
+        'prepareRecording': boolean;
     }
 
     type EventParamsMapping = {
         getDefaultSaveDirectory: [];
         'dialog:selectDirectory': [];
         'getSources': [];
+        'getPrimaryScreen': [];
         'startRecording': [];
         'stopRecording': [string];
         'saveChunk': [ArrayBuffer];
+        'openRegionSelector': [];
+        'closeRegionSelector': [];
+        'regionSelected': [Region];
+        'prepareRecording': [string];
     }
 
     interface SettingsModalProps {
@@ -99,5 +115,18 @@ declare global {
 
     interface TimerDisplayProps {
         seconds: number;
+    }
+
+    interface RegionSelectorProps {
+        isOpen: boolean;
+        onRegionSelect: (region: Region) => void;
+        onCancel: () => void;
+    }
+
+    interface Region {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
     }
 }

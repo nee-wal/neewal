@@ -38,6 +38,7 @@ export default function Recorder() {
         return localStorage.getItem('saveDirectory') || '';
     });
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
 
     useEffect(() => {
         if (!saveDirectory && window.electron && window.electron.getDefaultSaveDirectory) {
@@ -73,6 +74,28 @@ export default function Recorder() {
         localStorage.setItem('countdown', enabled.toString());
     };
 
+    const handleSourceModeChange = (mode: SourceMode) => {
+        setSourceMode(mode);
+        if (mode === 'region') {
+            if (window.electron && window.electron.openRegionSelector) {
+                window.electron.openRegionSelector();
+            }
+        }
+    };
+
+    const handleRegionSelect = (region: Region) => {
+        setSelectedRegion(region);
+    };
+
+    // Listen for region selected from the separate window
+    useEffect(() => {
+        if (window.electron && window.electron.onRegionSelected) {
+            window.electron.onRegionSelected((region: Region) => {
+                handleRegionSelect(region);
+            });
+        }
+    }, []);
+
     // Status text logic
     const [statusText, setStatusText] = useState('Ready to record');
     const [statusColor, setStatusColor] = useState('text-[var(--color-primary)] bg-[var(--color-primary)]/10 border-[var(--color-primary)]/20');
@@ -85,43 +108,72 @@ export default function Recorder() {
     const toggleRecording = async () => {
         if (!isRecording) {
             try {
-                // 1. Get Sources
+                // 1. Check Electron APIs
                 if (!window.electron || !window.electron.getSources) {
                     alert("Electron APIs not available");
                     return;
                 }
-                const sources = await window.electron.getSources();
-                console.log('Available sources:', sources);
 
-                // Select source based on current mode
-                const targetType = sourceMode === 'window' ? 'window' : 'screen';
-                const selectedSource = sources.find((s: any) => s.id.startsWith(targetType));
-                const sourceId = selectedSource ? selectedSource.id : sources[0]?.id;
-
-                if (!sourceId) {
-                    alert("No source found to record");
+                // Check if region mode is selected but no region is chosen
+                if (sourceMode === 'region' && !selectedRegion) {
+                    alert("Please select a region first");
+                    if (window.electron && window.electron.openRegionSelector) {
+                        window.electron.openRegionSelector();
+                    }
                     return;
                 }
 
-                // 2. Get Streams
-                // Video + System Audio
-                const constraints: any = {
-                    audio: systemActive ? {
-                        mandatory: {
-                            chromeMediaSource: 'desktop'
-                        }
-                    } : false,
-                    video: {
-                        mandatory: {
-                            chromeMediaSource: 'desktop',
-                            chromeMediaSourceId: sourceId,
-                            minFrameRate: frameRate,
-                            maxFrameRate: frameRate
-                        }
-                    }
-                };
+                let desktopStream: MediaStream;
+                let targetSourceId: string;
 
-                const desktopStream = await navigator.mediaDevices.getUserMedia(constraints);
+                // Determine the correct source ID based on mode
+                if (sourceMode === 'region') {
+                    const screenSource = await window.electron.getPrimaryScreen();
+                    if (!screenSource) {
+                        alert("No screen source available for region recording. Please ensure screen sharing permissions are granted.");
+                        return;
+                    }
+                    targetSourceId = screenSource.id;
+                } else {
+                    // Start by getting potential sources
+                    const sources = await window.electron.getSources();
+
+                    const targetType = sourceMode === 'window' ? 'window' : 'screen';
+                    const selectedSource = sources.find((s: any) => s.id.startsWith(targetType));
+                    const sourceId = selectedSource ? selectedSource.id : sources[0]?.id;
+
+                    if (!sourceId) {
+                        alert("No source found to record");
+                        return;
+                    }
+                    targetSourceId = sourceId;
+                }
+
+                // Use getUserMedia directly which should not prompt if sourceId is valid and permissions are granted
+                // or prompt once if needed.
+                try {
+                    const constraints: any = {
+                        audio: systemActive ? {
+                            mandatory: {
+                                chromeMediaSource: 'desktop'
+                            }
+                        } : false,
+                        video: {
+                            mandatory: {
+                                chromeMediaSource: 'desktop',
+                                chromeMediaSourceId: targetSourceId,
+                                minFrameRate: frameRate,
+                                maxFrameRate: frameRate
+                            }
+                        }
+                    };
+
+                    console.log('Using constraints:', constraints);
+                    desktopStream = await navigator.mediaDevices.getUserMedia(constraints);
+                } catch (err) {
+                    console.error("Failed to get media stream:", err);
+                    throw err;
+                }
 
                 // Microphone
                 let micStream: MediaStream | null = null;
@@ -169,8 +221,65 @@ export default function Recorder() {
                     tracks.push(...destination.stream.getAudioTracks());
                 }
 
-                const combinedStream = new MediaStream(tracks);
-                streamRef.current = combinedStream;
+                let finalStream: MediaStream;
+
+                // Handle region recording with canvas cropping
+                if (sourceMode === 'region' && selectedRegion) {
+                    // Create a video element to play the desktop stream
+                    const video = document.createElement('video');
+                    video.srcObject = new MediaStream([desktopStream.getVideoTracks()[0]]);
+                    video.play();
+
+                    // Wait for video metadata to load
+                    await new Promise((resolve) => {
+                        video.onloadedmetadata = resolve;
+                    });
+
+                    // Create canvas for cropping
+                    const canvas = document.createElement('canvas');
+                    canvas.width = selectedRegion.width;
+                    canvas.height = selectedRegion.height;
+                    const ctx = canvas.getContext('2d')!;
+
+                    // Draw cropped region at the specified frame rate
+                    const drawInterval = setInterval(() => {
+                        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                            ctx.drawImage(
+                                video,
+                                selectedRegion.x, selectedRegion.y, selectedRegion.width, selectedRegion.height,
+                                0, 0, selectedRegion.width, selectedRegion.height
+                            );
+                        }
+                    }, 1000 / frameRate);
+
+                    // Store interval for cleanup
+                    const cleanupCanvas = () => {
+                        clearInterval(drawInterval);
+                        video.srcObject = null;
+                        // IMPORTANT: Stop the original stream tracks when canvas cleanup/stop is called
+                        // This prevents the "sharing indicator" from persisting or hidden streams running
+                        desktopStream.getTracks().forEach(track => track.stop());
+                    };
+
+                    // Get stream from canvas
+                    const canvasStream = canvas.captureStream(frameRate);
+                    const videoTracks = canvasStream.getVideoTracks();
+
+                    // Combine canvas video with audio
+                    if (hasAudio) {
+                        finalStream = new MediaStream([...videoTracks, ...destination.stream.getAudioTracks()]);
+                    } else {
+                        finalStream = new MediaStream(videoTracks);
+                    }
+
+                    // Store cleanup function
+                    (finalStream as any)._cleanupCanvas = cleanupCanvas;
+                } else {
+                    // Normal recording (screen or window)
+                    finalStream = new MediaStream(tracks);
+                }
+
+                streamRef.current = finalStream;
 
                 // 3. Initialize Recording in Main
                 await window.electron.startRecording();
@@ -192,7 +301,7 @@ export default function Recorder() {
                 const videoBitsPerSecond = Math.floor((frameRate / 30) * 2500000);
                 const audioBitsPerSecond = 128000; // 128kbps for audio
 
-                const recorder = new MediaRecorder(combinedStream, {
+                const recorder = new MediaRecorder(finalStream, {
                     mimeType,
                     videoBitsPerSecond,
                     audioBitsPerSecond
@@ -253,6 +362,10 @@ export default function Recorder() {
                 mediaRecorderRef.current.stop();
             }
             if (streamRef.current) {
+                // Cleanup canvas if region recording
+                if ((streamRef.current as any)._cleanupCanvas) {
+                    (streamRef.current as any)._cleanupCanvas();
+                }
                 streamRef.current.getTracks().forEach(track => track.stop());
             }
 
@@ -365,8 +478,32 @@ export default function Recorder() {
                         {/* Source Selector */}
                         <SourceSelector
                             selectedMode={sourceMode}
-                            onSelectMode={setSourceMode}
+                            onSelectMode={handleSourceModeChange}
                         />
+
+                        {/* Region Info Display */}
+                        {sourceMode === 'region' && selectedRegion && (
+                            <div className="w-full bg-[var(--color-background-dark)] border border-[var(--color-border-dark)] rounded-lg p-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-xs text-[var(--color-text-muted)]">Selected Region</span>
+                                        <span className="text-sm text-[var(--color-text-primary)] font-mono">
+                                            {selectedRegion.width} × {selectedRegion.height}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            if (window.electron && window.electron.openRegionSelector) {
+                                                window.electron.openRegionSelector();
+                                            }
+                                        }}
+                                        className="text-xs text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors px-2 py-1 rounded border border-[var(--color-primary)]/30 hover:border-[var(--color-primary)] cursor-pointer"
+                                    >
+                                        Reselect
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Audio Controls */}
                         <AudioControls

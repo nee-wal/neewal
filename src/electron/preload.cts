@@ -4,9 +4,17 @@ contextBridge.exposeInMainWorld('electron', {
     selectDirectory: () => ipcInvoke('dialog:selectDirectory'),
     getDefaultSaveDirectory: () => ipcInvoke('getDefaultSaveDirectory'),
     getSources: () => ipcInvoke('getSources'),
+    getPrimaryScreen: () => ipcInvoke('getPrimaryScreen'),
     startRecording: () => ipcInvoke('startRecording'),
     saveChunk: (chunk: ArrayBuffer) => ipcInvoke('saveChunk', chunk),
     stopRecording: (saveDir: string) => ipcInvoke('stopRecording', saveDir),
+    openRegionSelector: () => ipcInvoke('openRegionSelector'),
+    closeRegionSelector: () => ipcInvoke('closeRegionSelector'),
+    regionSelected: (region: Region) => ipcInvoke('regionSelected', region),
+    onRegionSelected: (callback: (region: Region) => void) => {
+        ipcRenderer.on('region-selected', (_event: any, region: any) => callback(region));
+    },
+    prepareRecording: (id: string) => ipcInvoke('prepareRecording', id),
 } satisfies Window['electron']);
 
 const ipcInvoke = <Key extends keyof EventPayloadMapping>(

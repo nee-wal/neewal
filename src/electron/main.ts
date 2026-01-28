@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, desktopCapturer, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, desktopCapturer, ipcMain, screen } from 'electron';
 import { ipcMainHandle, isDev } from "./utils.js";
 import { unlink, createWriteStream, WriteStream } from 'fs';
 import { join } from 'path';
@@ -16,6 +16,30 @@ app.on("ready", () => {
         },
         autoHideMenuBar: true,
     });
+
+    // Handle automatic source selection for getDisplayMedia
+    mainWindow.webContents.session.setDisplayMediaRequestHandler((request, callback) => {
+        desktopCapturer.getSources({ types: ['screen', 'window'] }).then((sources) => {
+            if (pendingSourceId) {
+                const source = sources.find(s => s.id === pendingSourceId);
+                if (source) {
+                    callback({ video: source, audio: 'loopback' });
+                } else {
+                    console.log('Pending source not found:', pendingSourceId);
+                    // Fallback to first screen
+                    callback({ video: sources[0], audio: 'loopback' });
+                }
+                pendingSourceId = null;
+            } else {
+                // If no pending ID, default behavior (or select first screen to avoid hanging)
+                // Since this handler effectively disables the default picker, we have to choose something.
+                // We'll choose the primary screen consistently if not specified.
+                callback({ video: sources[0], audio: 'loopback' });
+            }
+        }).catch(err => {
+            console.error('Error in display media request handler:', err);
+        });
+    }, { useSystemPicker: true });
 
     if (isDev()) {
         mainWindow.loadURL('http://localhost:5123');
@@ -41,6 +65,12 @@ app.on("ready", () => {
 
     ipcMainHandle('getSources', async () => {
         return await desktopCapturer.getSources({ types: ['window', 'screen'], thumbnailSize: { width: 0, height: 0 } });
+    });
+
+    ipcMainHandle('getPrimaryScreen', async () => {
+        // Get only screen sources for region recording
+        const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 0, height: 0 } });
+        return sources.length > 0 ? sources[0] : null;
     });
 
     let recordingStream: WriteStream | null = null;
@@ -114,6 +144,74 @@ app.on("ready", () => {
                 resolve(null);
             }
         });
+    });
+
+    // Region selector window
+    let regionSelectorWindow: BrowserWindow | null = null;
+
+    ipcMainHandle('openRegionSelector', async () => {
+        if (regionSelectorWindow) {
+            regionSelectorWindow.close();
+        }
+
+        const primaryDisplay = screen.getPrimaryDisplay();
+        const { width, height } = primaryDisplay.bounds;
+
+        regionSelectorWindow = new BrowserWindow({
+            width,
+            height,
+            x: 0,
+            y: 0,
+            transparent: true,
+            frame: false,
+            alwaysOnTop: true,
+            skipTaskbar: true,
+            resizable: false,
+            movable: false,
+            fullscreen: true,
+            webPreferences: {
+                preload: getPreLoadPath(),
+                nodeIntegration: false,
+                contextIsolation: true,
+            },
+        });
+
+        if (isDev()) {
+            regionSelectorWindow.loadURL('http://localhost:5123/#/region-selector');
+        } else {
+            regionSelectorWindow.loadURL(getUiPath() + '#/region-selector');
+        }
+
+        regionSelectorWindow.setAlwaysOnTop(true, 'screen-saver');
+        regionSelectorWindow.setVisibleOnAllWorkspaces(true);
+        regionSelectorWindow.setFullScreenable(false);
+
+        return true;
+    });
+
+    let pendingSourceId: string | null = null;
+
+    ipcMain.handle('prepareRecording', async (event, id: string) => {
+        pendingSourceId = id;
+        return true;
+    });
+
+    ipcMainHandle('closeRegionSelector', async () => {
+        if (regionSelectorWindow) {
+            regionSelectorWindow.close();
+            regionSelectorWindow = null;
+        }
+        return true;
+    });
+
+    ipcMain.handle('regionSelected', async (_event: any, region: { x: number; y: number; width: number; height: number }) => {
+        if (regionSelectorWindow) {
+            regionSelectorWindow.close();
+            regionSelectorWindow = null;
+        }
+        // Send the region back to the main window
+        mainWindow.webContents.send('region-selected', region);
+        return true;
     });
 
 })
