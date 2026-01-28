@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
 
 interface RegionSelectorProps {
@@ -13,13 +13,20 @@ export function RegionSelector({ isOpen, onRegionSelect, onCancel }: RegionSelec
     const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
     const overlayRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if (!isOpen) {
-            setIsSelecting(false);
-            setStartPos({ x: 0, y: 0 });
-            setCurrentPos({ x: 0, y: 0 });
-        }
-    }, [isOpen]);
+    // Reset selection state when closing
+    const handleCancel = useCallback(() => {
+        setIsSelecting(false);
+        setStartPos({ x: 0, y: 0 });
+        setCurrentPos({ x: 0, y: 0 });
+        onCancel();
+    }, [onCancel]);
+
+    const handleRegionSelect = useCallback((region: { x: number; y: number; width: number; height: number }) => {
+        setIsSelecting(false);
+        setStartPos({ x: 0, y: 0 });
+        setCurrentPos({ x: 0, y: 0 });
+        onRegionSelect(region);
+    }, [onRegionSelect]);
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if (e.target !== overlayRef.current) return;
@@ -55,7 +62,7 @@ export function RegionSelector({ isOpen, onRegionSelect, onCancel }: RegionSelec
 
         // Only accept regions with minimum size
         if (width > 50 && height > 50) {
-            onRegionSelect({ x, y, width, height });
+            handleRegionSelect({ x, y, width, height });
         }
     };
 
@@ -63,14 +70,14 @@ export function RegionSelector({ isOpen, onRegionSelect, onCancel }: RegionSelec
         if (isOpen) {
             const handleKeyDown = (e: KeyboardEvent) => {
                 if (e.key === 'Escape') {
-                    onCancel();
+                    handleCancel();
                 }
             };
 
             window.addEventListener('keydown', handleKeyDown);
             return () => window.removeEventListener('keydown', handleKeyDown);
         }
-    }, [isOpen, onCancel]);
+    }, [isOpen, handleCancel]);
 
     if (!isOpen) return null;
 
@@ -99,7 +106,7 @@ export function RegionSelector({ isOpen, onRegionSelect, onCancel }: RegionSelec
                         Click and drag to select recording area
                     </p>
                     <button
-                        onClick={onCancel}
+                        onClick={handleCancel}
                         className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
                         title="Cancel (ESC)"
                     >
