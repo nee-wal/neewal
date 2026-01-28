@@ -1,4 +1,5 @@
 const { contextBridge, ipcRenderer } = require('electron');
+import type { IpcRendererEvent } from 'electron';
 
 contextBridge.exposeInMainWorld('electron', {
     selectDirectory: () => ipcInvoke('dialog:selectDirectory'),
@@ -12,7 +13,7 @@ contextBridge.exposeInMainWorld('electron', {
     closeRegionSelector: () => ipcInvoke('closeRegionSelector'),
     regionSelected: (region: Region) => ipcInvoke('regionSelected', region),
     onRegionSelected: (callback: (region: Region, sourceId?: string) => void) => {
-        ipcRenderer.on('region-selected', (_event: any, region: any, sourceId: any) => callback(region, sourceId));
+        ipcRenderer.on('region-selected', (_event: IpcRendererEvent, region: Region, sourceId?: string) => callback(region, sourceId));
     },
     prepareRecording: (id: string) => ipcInvoke('prepareRecording', id),
     getRegionBackground: () => ipcInvoke('getRegionBackground'),
@@ -20,7 +21,7 @@ contextBridge.exposeInMainWorld('electron', {
 
 const ipcInvoke = <Key extends keyof EventPayloadMapping>(
     key: Key,
-    ...args: Key extends keyof EventParamsMapping ? EventParamsMapping[Key] : any[]
+    ...args: Key extends keyof EventParamsMapping ? EventParamsMapping[Key] : never[]
 ): Promise<EventPayloadMapping[Key]> => {
     return ipcRenderer.invoke(key, ...args);
 }

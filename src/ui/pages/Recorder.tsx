@@ -154,7 +154,7 @@ export default function Recorder() {
                     const sources = await window.electron.getSources();
 
                     const targetType = sourceMode === 'window' ? 'window' : 'screen';
-                    const selectedSource = sources.find((s: any) => s.id.startsWith(targetType));
+                    const selectedSource = sources.find((s) => s.id.startsWith(targetType));
                     const sourceId = selectedSource ? selectedSource.id : sources[0]?.id;
 
                     if (!sourceId) {
@@ -167,7 +167,7 @@ export default function Recorder() {
                 // Use getUserMedia directly which should not prompt if sourceId is valid and permissions are granted
                 // or prompt once if needed.
                 try {
-                    const constraints: any = {
+                    const constraints: RecordingConstraints = {
                         audio: systemActive ? {
                             mandatory: {
                                 chromeMediaSource: 'desktop'
@@ -184,7 +184,7 @@ export default function Recorder() {
                     };
 
                     console.log('Using constraints:', constraints);
-                    desktopStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    desktopStream = await navigator.mediaDevices.getUserMedia(constraints as unknown as MediaStreamConstraints);
                 } catch (err) {
                     console.error("Failed to get media stream:", err);
                     throw err;
@@ -288,7 +288,7 @@ export default function Recorder() {
                     }
 
                     // Store cleanup function
-                    (finalStream as any)._cleanupCanvas = cleanupCanvas;
+                    (finalStream as ExtendedMediaStream)._cleanupCanvas = cleanupCanvas;
                 } else {
                     // Normal recording (screen or window)
                     finalStream = new MediaStream(tracks);
@@ -343,8 +343,8 @@ export default function Recorder() {
                     setSeconds(prev => prev + 1);
                 }, 1000);
 
-            } catch (err: any) {
-                if (err.name === 'NotAllowedError' || err.message.includes('Permission denied')) {
+            } catch (err) {
+                if (err instanceof Error && (err.name === 'NotAllowedError' || err.message.includes('Permission denied'))) {
                     console.log('Recording cancelled by user');
                     setStatusText('Selection cancelled');
                     setTimeout(() => {
@@ -378,8 +378,8 @@ export default function Recorder() {
             }
             if (streamRef.current) {
                 // Cleanup canvas if region recording
-                if ((streamRef.current as any)._cleanupCanvas) {
-                    (streamRef.current as any)._cleanupCanvas();
+                if ((streamRef.current as ExtendedMediaStream)._cleanupCanvas) {
+                    (streamRef.current as ExtendedMediaStream)._cleanupCanvas?.();
                 }
                 streamRef.current.getTracks().forEach(track => track.stop());
             }
