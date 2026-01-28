@@ -16,7 +16,7 @@ declare global {
             openRegionSelector: () => Promise<boolean>;
             closeRegionSelector: () => Promise<boolean>;
             regionSelected: (region: Region) => Promise<boolean>;
-            onRegionSelected: (callback: (region: Region) => void) => void;
+            onRegionSelected: (callback: (region: Region, sourceId?: string) => void) => void;
             prepareRecording: (id: string) => Promise<boolean>;
             getRegionBackground: () => Promise<string | null>;
         };

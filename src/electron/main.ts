@@ -146,11 +146,10 @@ app.on("ready", () => {
         });
     });
 
-
-
     // Region selector window
     let regionSelectorWindow: BrowserWindow | null = null;
     let regionScreenshot: string | null = null;
+    let cachedRegionScreenId: string | null = null;
 
     ipcMainHandle('getRegionBackground', async () => {
         return regionScreenshot;
@@ -174,10 +173,12 @@ app.on("ready", () => {
             // On Linux/Wayland primary display detection can be tricky, but usually sources[0] is strictly the main one provided by pipewire portal if available, or X11 root.
             if (sources.length > 0) {
                 regionScreenshot = sources[0].thumbnail.toDataURL();
+                cachedRegionScreenId = sources[0].id;
             }
         } catch (error) {
             console.error('Failed to capture screen for background:', error);
             regionScreenshot = null;
+            cachedRegionScreenId = null;
         }
 
         regionSelectorWindow = new BrowserWindow({
@@ -233,7 +234,7 @@ app.on("ready", () => {
             regionSelectorWindow = null;
         }
         // Send the region back to the main window
-        mainWindow.webContents.send('region-selected', region);
+        mainWindow.webContents.send('region-selected', region, cachedRegionScreenId);
         return true;
     });
 

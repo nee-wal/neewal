@@ -39,6 +39,7 @@ export default function Recorder() {
     });
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
+    const [cachedSourceId, setCachedSourceId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!saveDirectory && window.electron && window.electron.getDefaultSaveDirectory) {
@@ -76,6 +77,11 @@ export default function Recorder() {
 
     const handleSourceModeChange = (mode: SourceMode) => {
         setSourceMode(mode);
+        if (mode !== 'region') {
+            setCachedSourceId(null);
+            setSelectedRegion(null);
+        }
+
         if (mode === 'region') {
             if (window.electron && window.electron.openRegionSelector) {
                 window.electron.openRegionSelector();
@@ -83,15 +89,18 @@ export default function Recorder() {
         }
     };
 
-    const handleRegionSelect = (region: Region) => {
+    const handleRegionSelect = (region: Region, sourceId?: string) => {
         setSelectedRegion(region);
+        if (sourceId) {
+            setCachedSourceId(sourceId);
+        }
     };
 
     // Listen for region selected from the separate window
     useEffect(() => {
         if (window.electron && window.electron.onRegionSelected) {
-            window.electron.onRegionSelected((region: Region) => {
-                handleRegionSelect(region);
+            window.electron.onRegionSelected((region: Region, sourceId?: string) => {
+                handleRegionSelect(region, sourceId);
             });
         }
     }, []);
@@ -128,12 +137,18 @@ export default function Recorder() {
 
                 // Determine the correct source ID based on mode
                 if (sourceMode === 'region') {
-                    const screenSource = await window.electron.getPrimaryScreen();
-                    if (!screenSource) {
-                        alert("No screen source available for region recording. Please ensure screen sharing permissions are granted.");
-                        return;
+                    if (cachedSourceId) {
+                        console.log('Region mode: Using cached source ID');
+                        targetSourceId = cachedSourceId;
+                    } else {
+                        // Fallback if no cached ID (e.g. legacy behavior or error)
+                        const screenSource = await window.electron.getPrimaryScreen();
+                        if (!screenSource) {
+                            alert("No screen source available for region recording. Please ensure screen sharing permissions are granted.");
+                            return;
+                        }
+                        targetSourceId = screenSource.id;
                     }
-                    targetSourceId = screenSource.id;
                 } else {
                     // Start by getting potential sources
                     const sources = await window.electron.getSources();
