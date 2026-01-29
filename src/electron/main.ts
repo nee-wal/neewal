@@ -133,11 +133,8 @@ app.on("ready", () => {
                         case 'webm':
                             ffmpegArgs = [
                                 '-i', tempFilePath,
-                                '-c:v', 'libvpx-vp9',    // VP9 codec (better than VP8)
-                                '-crf', '30',            // Quality for VP9
-                                '-b:v', '0',             // Variable bitrate
-                                '-c:a', 'libopus',       // Opus codec for audio (best for webm)
-                                '-b:a', '128k',          // Audio bitrate
+                                '-c:v', 'copy',          // Copy video stream (no re-encoding)
+                                '-c:a', 'copy',          // Copy audio stream (no re-encoding)
                                 outputPath
                             ];
                             break;

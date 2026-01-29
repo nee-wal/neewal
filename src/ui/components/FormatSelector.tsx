@@ -15,8 +15,8 @@ export function FormatSelector({ format, onFormatChange }: FormatSelectorProps) 
                     }}
                 >
                     <option value="mp4">.mp4 (H.264)</option>
-                    <option value="webm">.webm (VP9)</option>
-                    <option value="mkv">.mkv (Raw)</option>
+                    <option value="webm">.webm (Native)</option>
+                    <option value="mkv">.mkv (Lossless)</option>
                     <option value="gif">.gif</option>
                 </select>
             </div>
