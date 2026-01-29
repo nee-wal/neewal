@@ -43,7 +43,7 @@ declare global {
             getPrimaryScreen: () => Promise<DesktopCapturerSource | null>;
             startRecording: () => Promise<string>;
             saveChunk: (chunk: ArrayBuffer) => Promise<void>;
-            stopRecording: (saveDir: string) => Promise<string | null>;
+            stopRecording: (saveDir: string, format: string) => Promise<string | null>;
             openRegionSelector: () => Promise<boolean>;
             closeRegionSelector: () => Promise<boolean>;
             regionSelected: (region: Region) => Promise<boolean>;
@@ -81,7 +81,7 @@ declare global {
         'getSources': [];
         'getPrimaryScreen': [];
         'startRecording': [];
-        'stopRecording': [string];
+        'stopRecording': [string, string];
         'saveChunk': [ArrayBuffer];
         'openRegionSelector': [];
         'closeRegionSelector': [];

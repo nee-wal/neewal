@@ -20,7 +20,10 @@ export default function Recorder() {
     const [sourceMode, setSourceMode] = useState<SourceMode>('screen');
     const [micActive, setMicActive] = useState(true);
     const [systemActive, setSystemActive] = useState(false);
-    const [format, setFormat] = useState('mp4');
+    const [format, setFormat] = useState(() => {
+        const saved = localStorage.getItem('format');
+        return saved || 'mp4';
+    });
     const [frameRate, setFrameRate] = useState(() => {
         const saved = localStorage.getItem('frameRate');
         const parsed = saved ? parseInt(saved, 10) : 60;
@@ -73,6 +76,11 @@ export default function Recorder() {
     const handleCountdownChange = (enabled: boolean) => {
         setCountdown(enabled);
         localStorage.setItem('countdown', enabled.toString());
+    };
+
+    const handleFormatChange = (newFormat: string) => {
+        setFormat(newFormat);
+        localStorage.setItem('format', newFormat);
     };
 
     const handleSourceModeChange = async (mode: SourceMode) => {
@@ -348,7 +356,6 @@ export default function Recorder() {
                         await new Promise(resolve => setTimeout(resolve, 1000));
                     }
 
-
                     // Hide countdown window
                     await window.electron.hideCountdown();
 
@@ -423,7 +430,10 @@ export default function Recorder() {
             }
 
             setTimeout(async () => {
-                const path = await window.electron.stopRecording(saveDirectory || await window.electron.getDefaultSaveDirectory());
+                const path = await window.electron.stopRecording(
+                    saveDirectory || await window.electron.getDefaultSaveDirectory(),
+                    format
+                );
                 if (path) {
                     setStatusText(`Saved to ${path.split('/').pop()}`);
                 } else {
@@ -558,7 +568,7 @@ export default function Recorder() {
                         {/* Format Selector */}
                         <FormatSelector
                             format={format}
-                            onFormatChange={setFormat}
+                            onFormatChange={handleFormatChange}
                         />
 
                     </div>

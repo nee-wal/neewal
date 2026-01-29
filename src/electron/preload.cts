@@ -8,7 +8,7 @@ contextBridge.exposeInMainWorld('electron', {
     getPrimaryScreen: () => ipcInvoke('getPrimaryScreen'),
     startRecording: () => ipcInvoke('startRecording'),
     saveChunk: (chunk: ArrayBuffer) => ipcInvoke('saveChunk', chunk),
-    stopRecording: (saveDir: string) => ipcInvoke('stopRecording', saveDir),
+    stopRecording: (saveDir: string, format: string) => ipcInvoke('stopRecording', saveDir, format),
     openRegionSelector: () => ipcInvoke('openRegionSelector'),
     closeRegionSelector: () => ipcInvoke('closeRegionSelector'),
     regionSelected: (region: Region) => ipcInvoke('regionSelected', region),

@@ -89,11 +89,11 @@ app.on("ready", () => {
         }
     });
 
-    ipcMain.handle('stopRecording', async (_event, saveDir: string) => {
+    ipcMain.handle('stopRecording', async (_event, saveDir: string, format: string) => {
         return new Promise((resolve, reject) => {
             if (recordingStream) {
                 recordingStream.end(async () => {
-                    // Conversion to MP4 using ffmpeg
+                    // Conversion using ffmpeg
                     if (!tempFilePath) {
                         resolve(null);
                         return;
@@ -106,19 +106,80 @@ app.on("ready", () => {
                     const h = String(now.getHours()).padStart(2, '0');
                     const m = String(now.getMinutes()).padStart(2, '0');
                     const s = String(now.getSeconds()).padStart(2, '0');
-                    const outputFilename = `Neewal_${yyyy}-${mm}-${dd}_${h}-${m}-${s}.mp4`;
+
+                    const outputFilename = `Neewal_${yyyy}-${mm}-${dd}_${h}-${m}-${s}.${format}`;
                     const outputPath = join(saveDir, outputFilename);
 
                     // Allow ffmpeg path to be configurable or found in path
                     const ffmpegPath = '/usr/bin/ffmpeg'; // Hardcoded as per user instructions for now/Linux
 
-                    const ffmpeg = spawn(ffmpegPath, [
-                        '-i', tempFilePath,
-                        '-c:v', 'copy', // Try copy first, or use libx264 if needed. Copy is fast.
-                        '-c:a', 'aac',
-                        '-strict', 'experimental',
-                        outputPath
-                    ]);
+                    let ffmpegArgs: string[] = [];
+
+                    // Configure ffmpeg arguments based on format
+                    switch (format) {
+                        case 'mp4':
+                            ffmpegArgs = [
+                                '-i', tempFilePath,
+                                '-c:v', 'libx264',      // H.264 codec for video
+                                '-preset', 'fast',       // Encoding speed/quality tradeoff
+                                '-crf', '23',            // Quality (lower = better, 18-28 is good range)
+                                '-c:a', 'aac',           // AAC codec for audio
+                                '-b:a', '128k',          // Audio bitrate
+                                '-movflags', '+faststart', // Enable fast start for web playback
+                                outputPath
+                            ];
+                            break;
+
+                        case 'webm':
+                            ffmpegArgs = [
+                                '-i', tempFilePath,
+                                '-c:v', 'libvpx-vp9',    // VP9 codec (better than VP8)
+                                '-crf', '30',            // Quality for VP9
+                                '-b:v', '0',             // Variable bitrate
+                                '-c:a', 'libopus',       // Opus codec for audio (best for webm)
+                                '-b:a', '128k',          // Audio bitrate
+                                outputPath
+                            ];
+                            break;
+
+                        case 'mkv':
+                            ffmpegArgs = [
+                                '-i', tempFilePath,
+                                '-c:v', 'copy',          // Copy video stream (no re-encoding)
+                                '-c:a', 'copy',          // Copy audio stream (no re-encoding)
+                                outputPath
+                            ];
+                            break;
+
+                        case 'gif':
+                            ffmpegArgs = [
+                                '-i', tempFilePath,
+                                '-vf', 'fps=10,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse', // Optimize for GIF
+                                '-loop', '0',            // Loop forever
+                                outputPath
+                            ];
+                            break;
+
+                        default:
+                            // Default to mp4
+                            ffmpegArgs = [
+                                '-i', tempFilePath,
+                                '-c:v', 'libx264',
+                                '-preset', 'fast',
+                                '-crf', '23',
+                                '-c:a', 'aac',
+                                '-b:a', '128k',
+                                '-movflags', '+faststart',
+                                outputPath
+                            ];
+                    }
+
+                    const ffmpeg = spawn(ffmpegPath, ffmpegArgs);
+
+                    ffmpeg.stderr.on('data', (data) => {
+                        // Log ffmpeg output for debugging
+                        console.log(`ffmpeg: ${data}`);
+                    });
 
                     ffmpeg.on('close', (code) => {
                         if (code === 0) {
@@ -133,8 +194,6 @@ app.on("ready", () => {
 
                     ffmpeg.on('error', (err) => {
                         console.error('ffmpeg spawn error', err);
-                        // Fallback: Just move the file if ffmpeg fails (rename to mp4)
-                        // But user wants MP4.
                         reject(err);
                     });
 
