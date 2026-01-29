@@ -54,6 +54,10 @@ declare global {
             hideCountdown: () => Promise<boolean>;
             updateCountdown: (count: number) => Promise<boolean>;
             onCountdownUpdate: (callback: (count: number) => void) => void;
+            getVideos: () => Promise<VideoFile[]>;
+            openVideo: (path: string) => Promise<void>;
+            deleteVideo: (path: string) => Promise<void>;
+            openFolder: (path: string) => Promise<void>;
         };
     }
 
@@ -73,6 +77,10 @@ declare global {
         'showCountdown': boolean;
         'hideCountdown': boolean;
         'updateCountdown': boolean;
+        'getVideos': VideoFile[];
+        'openVideo': void;
+        'deleteVideo': void;
+        'openFolder': void;
     }
 
     type EventParamsMapping = {
@@ -91,6 +99,10 @@ declare global {
         'showCountdown': [];
         'hideCountdown': [];
         'updateCountdown': [number];
+        'getVideos': [];
+        'openVideo': [string];
+        'deleteVideo': [string];
+        'openFolder': [string];
     }
 
     interface SettingsModalProps {
@@ -179,5 +191,13 @@ declare global {
 
     interface CountdownOverlayProps {
         count: number;
+    }
+
+    interface VideoFile {
+        name: string;
+        path: string;
+        size: number;
+        created: Date;
+        thumbnail?: string;
     }
 }

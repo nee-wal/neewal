@@ -361,4 +361,58 @@ app.on("ready", () => {
         return true;
     });
 
+    // Video management handlers
+    ipcMain.handle('getVideos', async () => {
+        const saveDir = getDefaultSaveDirectory();
+        try {
+            const fs = await import('fs/promises');
+            const path = await import('path');
+
+            const files = await fs.readdir(saveDir);
+            const videoExtensions = ['.mp4', '.webm', '.mkv', '.gif'];
+
+            const videoFiles = await Promise.all(
+                files
+                    .filter(file => {
+                        const ext = path.extname(file).toLowerCase();
+                        return videoExtensions.includes(ext) && file.startsWith('Neewal_');
+                    })
+                    .map(async (file) => {
+                        const filePath = path.join(saveDir, file);
+                        const stats = await fs.stat(filePath);
+                        return {
+                            name: file,
+                            path: filePath,
+                            size: stats.size,
+                            created: stats.birthtime,
+                        };
+                    })
+            );
+
+            // Sort by creation date, newest first
+            return videoFiles.sort((a, b) => b.created.getTime() - a.created.getTime());
+        } catch (err) {
+            console.error('Failed to get videos:', err);
+            return [];
+        }
+    });
+
+    ipcMain.handle('openVideo', async (_event, videoPath: string) => {
+        const { shell } = await import('electron');
+        await shell.openPath(videoPath);
+    });
+
+    ipcMain.handle('deleteVideo', async (_event, videoPath: string) => {
+        try {
+            unlink(videoPath, () => { });
+        } catch (err) {
+            console.error('Failed to delete video:', err);
+        }
+    });
+
+    ipcMain.handle('openFolder', async (_event, folderPath: string) => {
+        const { shell } = await import('electron');
+        await shell.openPath(folderPath);
+    });
+
 })

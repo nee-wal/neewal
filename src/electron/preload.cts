@@ -23,6 +23,10 @@ contextBridge.exposeInMainWorld('electron', {
     onCountdownUpdate: (callback: (count: number) => void) => {
         ipcRenderer.on('countdown-update', (_event: IpcRendererEvent, count: number) => callback(count));
     },
+    getVideos: () => ipcInvoke('getVideos'),
+    openVideo: (path: string) => ipcInvoke('openVideo', path),
+    deleteVideo: (path: string) => ipcInvoke('deleteVideo', path),
+    openFolder: (path: string) => ipcInvoke('openFolder', path),
 } satisfies Window['electron']);
 
 const ipcInvoke = <Key extends keyof EventPayloadMapping>(

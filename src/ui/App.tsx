@@ -3,9 +3,11 @@ import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import Recorder from './pages/Recorder'; // We'll create this next
+import Recorder from './pages/Recorder';
+import Videos from './pages/Videos';
 import RegionSelectorPage from './pages/RegionSelectorPage';
 import CountdownPage from './pages/CountdownPage';
+import { MainLayout } from './components/MainLayout';
 import './index.css';
 import type { JSX } from "react";
 
@@ -60,7 +62,16 @@ function App() {
           <Route path="/countdown" element={<CountdownPage />} />
           <Route path="/" element={
             <RequireAuth>
-              <Recorder />
+              <MainLayout>
+                <Recorder />
+              </MainLayout>
+            </RequireAuth>
+          } />
+          <Route path="/videos" element={
+            <RequireAuth>
+              <MainLayout>
+                <Videos />
+              </MainLayout>
             </RequireAuth>
           } />
         </Routes>

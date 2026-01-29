@@ -1,8 +1,5 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { Button } from '../components/Button';
 import { Settings2 } from 'lucide-react';
 import { RecordButton } from '../components/RecordButton';
 import { TimerDisplay } from '../components/TimerDisplay';
@@ -12,8 +9,6 @@ import { FormatSelector } from '../components/FormatSelector';
 import { SettingsModal } from '../components/SettingsModal';
 
 export default function Recorder() {
-    const { signOut, user, isGuest } = useAuth();
-    const navigate = useNavigate();
 
     const [isRecording, setIsRecording] = useState(false);
     const [seconds, setSeconds] = useState(0);
@@ -510,35 +505,7 @@ export default function Recorder() {
     }, []);
 
     return (
-        <div className="flex h-screen flex-col bg-[var(--color-background-dark)] text-[var(--color-text-primary)] font-sans">
-            <header
-                className="flex h-14 items-center justify-between border-b border-[var(--color-border-dark)] bg-[var(--color-surface-dark)] px-4">
-                <div className="flex items-center gap-2 font-semibold">
-                    <span className="text-[var(--color-primary)]">⦿</span> Neewal
-                </div>
-                <div className="flex items-center gap-4 text-sm">
-                    {isGuest ? (
-                        <>
-                            <span className="text-[var(--color-text-muted)]">Guest</span>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => navigate('/login', { state: { canClose: true } })}
-                            >
-                                Login
-                            </Button>
-                        </>
-                    ) : (
-                        <>
-                            <span className="text-[var(--color-text-muted)]">{user?.email}</span>
-                            <Button variant="outline" size="sm" onClick={() => signOut()}>
-                                Logout
-                            </Button>
-                        </>
-                    )}
-                </div>
-            </header>
-
+        <>
             <main className="flex flex-1 flex-col items-center justify-center p-8 bg-[var(--color-background-dark)]">
                 {/* Main Content Area (simulating the app body from the snippet) */}
                 <div className="w-[380px] bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] rounded-xl shadow-2xl overflow-hidden flex flex-col pt-4"> {/* Removed title bar, added pt-4 */}
@@ -641,6 +608,6 @@ export default function Recorder() {
                 selectedMicId={selectedMicId}
                 onMicChange={handleMicChange}
             />
-        </div>
+        </>
     );
 }
