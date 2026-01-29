@@ -244,4 +244,62 @@ app.on("ready", () => {
         return true;
     });
 
+    // Countdown window
+    let countdownWindow: BrowserWindow | null = null;
+
+    ipcMainHandle('showCountdown', async () => {
+        if (countdownWindow) {
+            countdownWindow.close();
+        }
+
+        const primaryDisplay = screen.getPrimaryDisplay();
+        const { width, height } = primaryDisplay.bounds;
+
+        countdownWindow = new BrowserWindow({
+            width,
+            height,
+            x: 0,
+            y: 0,
+            transparent: true,
+            frame: false,
+            alwaysOnTop: true,
+            skipTaskbar: true,
+            resizable: false,
+            movable: false,
+            fullscreen: true,
+            webPreferences: {
+                preload: getPreLoadPath(),
+                nodeIntegration: false,
+                contextIsolation: true,
+            },
+        });
+
+        if (isDev()) {
+            countdownWindow.loadURL('http://localhost:5123/#/countdown');
+        } else {
+            countdownWindow.loadURL(getUiPath() + '#/countdown');
+        }
+
+        countdownWindow.setAlwaysOnTop(true, 'screen-saver');
+        countdownWindow.setVisibleOnAllWorkspaces(true);
+        countdownWindow.setFullScreenable(false);
+
+        return true;
+    });
+
+    ipcMainHandle('hideCountdown', async () => {
+        if (countdownWindow) {
+            countdownWindow.close();
+            countdownWindow = null;
+        }
+        return true;
+    });
+
+    ipcMain.handle('updateCountdown', async (_event, count: number) => {
+        if (countdownWindow) {
+            countdownWindow.webContents.send('countdown-update', count);
+        }
+        return true;
+    });
+
 })

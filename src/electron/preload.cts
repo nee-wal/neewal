@@ -17,6 +17,12 @@ contextBridge.exposeInMainWorld('electron', {
     },
     prepareRecording: (id: string) => ipcInvoke('prepareRecording', id),
     getRegionBackground: () => ipcInvoke('getRegionBackground'),
+    showCountdown: () => ipcInvoke('showCountdown'),
+    hideCountdown: () => ipcInvoke('hideCountdown'),
+    updateCountdown: (count: number) => ipcInvoke('updateCountdown', count),
+    onCountdownUpdate: (callback: (count: number) => void) => {
+        ipcRenderer.on('countdown-update', (_event: IpcRendererEvent, count: number) => callback(count));
+    },
 } satisfies Window['electron']);
 
 const ipcInvoke = <Key extends keyof EventPayloadMapping>(

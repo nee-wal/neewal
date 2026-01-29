@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Recorder from './pages/Recorder'; // We'll create this next
 import RegionSelectorPage from './pages/RegionSelectorPage';
+import CountdownPage from './pages/CountdownPage';
 import './index.css';
 import type { JSX } from "react";
 
@@ -56,6 +57,7 @@ function App() {
             </PublicOnly>
           } />
           <Route path="/region-selector" element={<RegionSelectorPage />} />
+          <Route path="/countdown" element={<CountdownPage />} />
           <Route path="/" element={
             <RequireAuth>
               <Recorder />

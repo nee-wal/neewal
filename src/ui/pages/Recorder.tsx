@@ -337,6 +337,26 @@ export default function Recorder() {
                     }
                 };
 
+                // Show countdown if enabled (AFTER all setup is complete)
+                if (countdown) {
+                    // Show countdown window
+                    await window.electron.showCountdown();
+
+                    // Start countdown from 3
+                    for (let i = 3; i > 0; i--) {
+                        await window.electron.updateCountdown(i);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+
+
+                    // Hide countdown window
+                    await window.electron.hideCountdown();
+
+                    // Wait a bit to ensure the countdown window is completely hidden
+                    // before starting the recording (prevents countdown from appearing in recording)
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+
                 recorder.start(1000); // 1-second chunks
 
                 // Start UI State

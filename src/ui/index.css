@@ -24,12 +24,15 @@
 @keyframes pulse-red {
   0% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(229, 83, 61, 0.7); /* Matching --color-record #E5533D approx */
+    box-shadow: 0 0 0 0 rgba(229, 83, 61, 0.7);
+    /* Matching --color-record #E5533D approx */
   }
+
   70% {
     transform: scale(1);
     box-shadow: 0 0 0 10px rgba(229, 83, 61, 0);
   }
+
   100% {
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(229, 83, 61, 0);
@@ -41,9 +44,32 @@
 }
 
 @keyframes blinker {
-  50% { opacity: 0; }
+  50% {
+    opacity: 0;
+  }
 }
 
 .animate-blink {
   animation: blinker 1s linear infinite;
+}
+
+@keyframes scale-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+}
+
+.animate-scale-pulse {
+  animation: scale-pulse 1s ease-in-out;
 }

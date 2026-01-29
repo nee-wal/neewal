@@ -50,6 +50,10 @@ declare global {
             onRegionSelected: (callback: (region: Region, sourceId?: string) => void) => void;
             prepareRecording: (id: string) => Promise<boolean>;
             getRegionBackground: () => Promise<string | null>;
+            showCountdown: () => Promise<boolean>;
+            hideCountdown: () => Promise<boolean>;
+            updateCountdown: (count: number) => Promise<boolean>;
+            onCountdownUpdate: (callback: (count: number) => void) => void;
         };
     }
 
@@ -66,6 +70,9 @@ declare global {
         'regionSelected': boolean;
         'prepareRecording': boolean;
         'getRegionBackground': string | null;
+        'showCountdown': boolean;
+        'hideCountdown': boolean;
+        'updateCountdown': boolean;
     }
 
     type EventParamsMapping = {
@@ -81,6 +88,9 @@ declare global {
         'regionSelected': [Region];
         'prepareRecording': [string];
         'getRegionBackground': [];
+        'showCountdown': [];
+        'hideCountdown': [];
+        'updateCountdown': [number];
     }
 
     interface SettingsModalProps {
@@ -162,5 +172,9 @@ declare global {
         y: number;
         width: number;
         height: number;
+    }
+
+    interface CountdownOverlayProps {
+        count: number;
     }
 }
