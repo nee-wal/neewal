@@ -148,6 +148,9 @@ declare global {
         onShowCursorChange: (show: boolean) => void;
         countdown: boolean;
         onCountdownChange: (enabled: boolean) => void;
+        audioDevices: MediaDeviceInfo[];
+        selectedMicId: string;
+        onMicChange: (deviceId: string) => void;
     }
 
     type SourceMode = 'screen' | 'window' | 'region';

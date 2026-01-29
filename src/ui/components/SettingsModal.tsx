@@ -1,4 +1,4 @@
-import { X, FolderOpen } from 'lucide-react';
+import { X, FolderOpen, Mic } from 'lucide-react';
 
 export function SettingsModal({
     isOpen,
@@ -10,7 +10,10 @@ export function SettingsModal({
     showCursor,
     onShowCursorChange,
     countdown,
-    onCountdownChange
+    onCountdownChange,
+    audioDevices,
+    selectedMicId,
+    onMicChange
 }: SettingsModalProps) {
     return (
         <div
@@ -45,6 +48,26 @@ export function SettingsModal({
                                 <FolderOpen className="w-3 h-3" />
                             </button>
                         </div>
+                    </div>
+
+                    {/* Setting Item: Microphone */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-[var(--color-text-primary)] flex items-center gap-1.5">
+                            <Mic className="w-3 h-3" />
+                            Microphone
+                        </label>
+                        <select
+                            value={selectedMicId}
+                            onChange={(e) => onMicChange(e.target.value)}
+                            className="w-full bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] rounded px-3 py-1.5 text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-primary)] cursor-pointer"
+                        >
+                            <option value="default">Default Microphone</option>
+                            {audioDevices.map((device) => (
+                                <option key={device.deviceId} value={device.deviceId}>
+                                    {device.label || `Microphone ${device.deviceId.slice(0, 8)}`}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     {/* Setting Item: Cursor */}

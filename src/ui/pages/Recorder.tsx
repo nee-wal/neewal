@@ -43,11 +43,41 @@ export default function Recorder() {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
     const [cachedSourceId, setCachedSourceId] = useState<string | null>(null);
+    const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+    const [selectedMicId, setSelectedMicId] = useState<string>(() => {
+        return localStorage.getItem('selectedMicId') || 'default';
+    });
 
     useEffect(() => {
         if (!saveDirectory && window.electron && window.electron.getDefaultSaveDirectory) {
             window.electron.getDefaultSaveDirectory().then(setSaveDirectory);
         }
+    }, []);
+
+    // Enumerate audio input devices
+    useEffect(() => {
+        const getAudioDevices = async () => {
+            try {
+                // Request permission first
+                await navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                    stream.getTracks().forEach(track => track.stop());
+                });
+
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const audioInputs = devices.filter(device => device.kind === 'audioinput');
+                setAudioDevices(audioInputs);
+            } catch (err) {
+                console.warn('Could not enumerate audio devices:', err);
+            }
+        };
+
+        getAudioDevices();
+
+        // Listen for device changes
+        navigator.mediaDevices.addEventListener('devicechange', getAudioDevices);
+        return () => {
+            navigator.mediaDevices.removeEventListener('devicechange', getAudioDevices);
+        };
     }, []);
 
     const handleSelectDirectory = async () => {
@@ -61,6 +91,11 @@ export default function Recorder() {
             console.warn('Electron API not available');
             alert('Directory selection is only available in the desktop app.');
         }
+    };
+
+    const handleMicChange = (deviceId: string) => {
+        setSelectedMicId(deviceId);
+        localStorage.setItem('selectedMicId', deviceId);
     };
 
     const handleFrameRateChange = (fps: number) => {
@@ -209,12 +244,19 @@ export default function Recorder() {
                 let micStream: MediaStream | null = null;
                 if (micActive) {
                     try {
+                        const audioConstraints: MediaTrackConstraints = {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: false // Sometimes helpful for music/high quality, but check
+                        };
+
+                        // Use specific device if selected (not 'default')
+                        if (selectedMicId && selectedMicId !== 'default') {
+                            audioConstraints.deviceId = { exact: selectedMicId };
+                        }
+
                         micStream = await navigator.mediaDevices.getUserMedia({
-                            audio: {
-                                echoCancellation: true,
-                                noiseSuppression: true,
-                                autoGainControl: false // Sometimes helpful for music/high quality, but check
-                            },
+                            audio: audioConstraints,
                             video: false
                         });
                     } catch (err) {
@@ -595,6 +637,9 @@ export default function Recorder() {
                 onShowCursorChange={handleShowCursorChange}
                 countdown={countdown}
                 onCountdownChange={handleCountdownChange}
+                audioDevices={audioDevices}
+                selectedMicId={selectedMicId}
+                onMicChange={handleMicChange}
             />
         </div>
     );
