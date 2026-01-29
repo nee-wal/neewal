@@ -152,7 +152,7 @@ export default function Recorder() {
 
     // Status text logic
     const [statusText, setStatusText] = useState('Ready to record');
-    const [statusColor, setStatusColor] = useState('text-[var(--color-primary)] bg-[var(--color-primary)]/10 border-[var(--color-primary)]/20');
+
 
     const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -415,7 +415,6 @@ export default function Recorder() {
                 // Start UI State
                 setIsRecording(true);
                 setStatusText('Recording...');
-                setStatusColor('text-[var(--color-record)] bg-[var(--color-record)]/10 border-[var(--color-record)]/20');
 
                 // Start Timer
                 setSeconds(0);
@@ -429,7 +428,6 @@ export default function Recorder() {
                     setStatusText('Selection cancelled');
                     setTimeout(() => {
                         setStatusText('Ready to record');
-                        setStatusColor('text-[var(--color-primary)] bg-[var(--color-primary)]/10 border-[var(--color-primary)]/20');
                     }, 2000);
 
                     // Cleanup
@@ -467,7 +465,7 @@ export default function Recorder() {
             // UI Feedback immediately
             setIsRecording(false);
             setStatusText('Processing...');
-            setStatusColor('text-[var(--color-primary)] bg-[var(--color-primary)]/10 border-[var(--color-primary)]/20');
+            setStatusText('Processing...');
 
             // Stop Timer
             if (timerIntervalRef.current) {
@@ -488,7 +486,6 @@ export default function Recorder() {
 
                 setTimeout(() => {
                     setStatusText('Ready to record');
-                    setStatusColor('text-[var(--color-primary)] bg-[var(--color-primary)]/10 border-[var(--color-primary)]/20');
                     setSeconds(0);
                 }, 3000);
             }, 500);
@@ -506,58 +503,79 @@ export default function Recorder() {
 
     return (
         <>
-            <main className="flex flex-1 flex-col items-center justify-center p-8 bg-[var(--color-background-dark)]">
-                {/* Main Content Area (simulating the app body from the snippet) */}
-                <div className="w-[380px] bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] rounded-xl shadow-2xl overflow-hidden flex flex-col pt-4"> {/* Removed title bar, added pt-4 */}
+            <main className="flex-1 flex flex-col items-center justify-center p-6 bg-[var(--color-background-dark)] relative overflow-hidden">
+                {/* Background Decorative Elements */}
+                <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--color-primary)] opacity-5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500 opacity-5 rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2 pointer-events-none"></div>
 
-                    {/* Settings Trigger - Positioned absolutely or integrated */}
-                    <div className="absolute top-20 right-1/2 translate-x-[200px] hidden"> {/* Optional: Positioning might be tricky without relative parent */}
-                    </div>
-
-                    <div className="px-4 pb-2 flex justify-end">
+                <div className="w-full max-w-lg bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] rounded-2xl shadow-2xl relative overflow-hidden backdrop-blur-sm z-10 font-sans">
+                    {/* Header */}
+                    <div className="px-6 py-4 flex items-center justify-between border-b border-[var(--color-border-dark)] bg-[var(--color-surface-dark)]/50 backdrop-blur-md">
+                        <div className="flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full transition-all duration-300 ${isRecording ? 'bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'bg-[var(--color-text-muted)]'}`}></span>
+                            <span className="text-sm font-semibold text-[var(--color-text-muted)] tracking-wide uppercase">{statusText}</span>
+                        </div>
                         <button
                             onClick={() => setIsSettingsOpen(true)}
-                            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
-                            title="Settings"
+                            className="p-2 rounded-lg hover:bg-[var(--color-background-dark)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-all duration-200 cursor-pointer border border-transparent hover:border-[var(--color-border-dark)] active:scale-95"
+                            title="Recording Settings"
                         >
-                            <Settings2 className="w-5 h-5" />
+                            <Settings2 className="w-4 h-4" />
                         </button>
                     </div>
 
-                    <div className="p-6 pt-0 flex flex-col items-center gap-6">
-
-                        {/* Status Indicator */}
-                        <div className="w-full text-center">
-                            <span className={`text-xs font-mono px-2 py-1 rounded border transition-colors duration-300 ${statusColor}`}>
-                                {statusText}
-                            </span>
-                        </div>
+                    <div className="p-8 flex flex-col items-center gap-8 relative z-10">
 
                         {/* Timer Display */}
-                        <TimerDisplay seconds={seconds} />
+                        <div className="scale-110 mb-2 transform transition-transform duration-300">
+                            <TimerDisplay seconds={seconds} />
+                        </div>
 
                         {/* Main Record Button */}
-                        <RecordButton
-                            isRecording={isRecording}
-                            onClick={toggleRecording}
-                        />
+                        <div className="relative group">
+                            <div className={`absolute inset-0 bg-[var(--color-primary)] rounded-full opacity-20 blur-xl transition-all duration-500 ${isRecording ? 'scale-150 animate-pulse' : 'scale-75 group-hover:scale-100'}`}></div>
+                            <RecordButton
+                                isRecording={isRecording}
+                                onClick={toggleRecording}
+                            />
+                        </div>
 
-                        {/* Divider */}
-                        <div className="w-full h-px bg-[var(--color-border-dark)]"></div>
+                        {/* Controls Grid */}
+                        <div className="w-full grid grid-cols-2 gap-3 mt-2">
+                            {/* Source */}
+                            <div className="col-span-2 bg-[var(--color-background-dark)]/50 border border-[var(--color-border-dark)] rounded-xl p-1 transition-colors hover:border-[var(--color-border-dark)]/80">
+                                <SourceSelector
+                                    selectedMode={sourceMode}
+                                    onSelectMode={handleSourceModeChange}
+                                />
+                            </div>
 
-                        {/* Source Selector */}
-                        <SourceSelector
-                            selectedMode={sourceMode}
-                            onSelectMode={handleSourceModeChange}
-                        />
+                            {/* Audio */}
+                            <div className="bg-[var(--color-background-dark)]/50 border border-[var(--color-border-dark)] rounded-xl p-3 flex flex-col justify-center transition-all hover:bg-[var(--color-background-dark)]/80 group/audio hover:border-[var(--color-primary)]/30">
+                                <span className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] mb-2 tracking-wider ml-1 group-hover/audio:text-[var(--color-primary)] transition-colors">Audio</span>
+                                <AudioControls
+                                    micActive={micActive}
+                                    onToggleMic={() => setMicActive(!micActive)}
+                                    systemActive={systemActive}
+                                    onToggleSystem={() => setSystemActive(!systemActive)}
+                                />
+                            </div>
 
-                        {/* Region Info Display */}
-                        {sourceMode === 'region' && selectedRegion && (
-                            <div className="w-full bg-[var(--color-background-dark)] border border-[var(--color-border-dark)] rounded-lg p-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-xs text-[var(--color-text-muted)]">Selected Region</span>
-                                        <span className="text-sm text-[var(--color-text-primary)] font-mono">
+                            {/* Format */}
+                            <div className="bg-[var(--color-background-dark)]/50 border border-[var(--color-border-dark)] rounded-xl p-3 flex flex-col justify-center transition-all hover:bg-[var(--color-background-dark)]/80 group/format hover:border-[var(--color-primary)]/30">
+                                <span className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] mb-2 tracking-wider ml-1 group-hover/format:text-[var(--color-primary)] transition-colors">Format</span>
+                                <FormatSelector
+                                    format={format}
+                                    onFormatChange={handleFormatChange}
+                                />
+                            </div>
+
+                            {/* Region Info (Conditional) */}
+                            {sourceMode === 'region' && selectedRegion && (
+                                <div className="col-span-2 bg-[var(--color-background-dark)] border border-[var(--color-border-dark)] rounded-xl p-3 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300 shadow-inner">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] tracking-wider">Region</span>
+                                        <span className="text-sm text-[var(--color-text-primary)] font-mono font-medium">
                                             {selectedRegion.width} × {selectedRegion.height}
                                         </span>
                                     </div>
@@ -567,28 +585,13 @@ export default function Recorder() {
                                                 window.electron.openRegionSelector();
                                             }
                                         }}
-                                        className="text-xs text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors px-2 py-1 rounded border border-[var(--color-primary)]/30 hover:border-[var(--color-primary)] cursor-pointer"
+                                        className="text-xs font-medium text-[var(--color-primary)] hover:text-white hover:bg-[var(--color-primary)] transition-all duration-200 px-3 py-1.5 rounded-md border border-[var(--color-primary)] cursor-pointer active:scale-95 shadow-sm"
                                     >
                                         Reselect
                                     </button>
                                 </div>
-                            </div>
-                        )}
-
-                        {/* Audio Controls */}
-                        <AudioControls
-                            micActive={micActive}
-                            onToggleMic={() => setMicActive(!micActive)}
-                            systemActive={systemActive}
-                            onToggleSystem={() => setSystemActive(!systemActive)}
-                        />
-
-                        {/* Format Selector */}
-                        <FormatSelector
-                            format={format}
-                            onFormatChange={handleFormatChange}
-                        />
-
+                            )}
+                        </div>
                     </div>
                 </div>
             </main>
