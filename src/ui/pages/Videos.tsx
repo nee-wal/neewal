@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, Trash2, FolderOpen, RefreshCw, Video } from 'lucide-react';
+import { Play, Trash2, FolderOpen, RefreshCw, Video, LayoutGrid, List } from 'lucide-react';
 import { Button } from '../components/Button';
 
 export default function Videos() {
@@ -7,6 +7,7 @@ export default function Videos() {
     const [loading, setLoading] = useState(true);
     const [saveDirectory, setSaveDirectory] = useState('');
     const [loadingThumbnails, setLoadingThumbnails] = useState<Set<number>>(new Set());
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     useEffect(() => {
         loadVideos();
@@ -92,6 +93,30 @@ export default function Videos() {
                         </p>
                     </div>
                     <div className="flex gap-2">
+                        {/* View Toggle */}
+                        <div className="flex bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] rounded-md p-1 gap-1 mr-2">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`p-1.5 rounded transition-all duration-200 ${viewMode === 'grid'
+                                    ? 'bg-[var(--color-primary)] text-white shadow-md'
+                                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-border-dark)]'
+                                    }`}
+                                title="Grid View"
+                            >
+                                <LayoutGrid className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`p-1.5 rounded transition-all duration-200 ${viewMode === 'list'
+                                    ? 'bg-[var(--color-primary)] text-white shadow-md'
+                                    : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-border-dark)]'
+                                    }`}
+                                title="List View"
+                            >
+                                <List className="w-4 h-4" />
+                            </button>
+                        </div>
+
                         <Button
                             variant="outline"
                             size="sm"
@@ -134,6 +159,68 @@ export default function Videos() {
                                 {saveDirectory}
                             </p>
                         )}
+                    </div>
+                ) : viewMode === 'list' ? (
+                    <div className="flex flex-col gap-2">
+                        {videos.map((video, index) => (
+                            <div
+                                key={index}
+                                className="flex items-center gap-4 p-3 bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] rounded-lg hover:border-[var(--color-primary)]/50 transition-all duration-200 group hover:shadow-md hover:translate-x-1"
+                            >
+                                {/* Thumbnail (Small) */}
+                                <div className="w-32 aspect-video bg-[var(--color-background-dark)] rounded overflow-hidden flex-shrink-0 relative">
+                                    {video.thumbnail ? (
+                                        <img
+                                            src={video.thumbnail}
+                                            alt={video.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <Video className="w-6 h-6 text-[var(--color-text-muted)] opacity-30" />
+                                        </div>
+                                    )}
+                                    {/* Play Overlay on Hover */}
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <button
+                                            onClick={() => handleOpenVideo(video.path)}
+                                            className="text-white hover:scale-110 transition-transform"
+                                        >
+                                            <Play className="w-8 h-8 fill-white" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Info */}
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="text-sm font-medium text-[var(--color-text-primary)] truncate mb-1 group-hover:text-[var(--color-primary)] transition-colors">
+                                        {video.name}
+                                    </h3>
+                                    <div className="flex items-center gap-4 text-xs text-[var(--color-text-muted)]">
+                                        <span className="font-mono bg-[var(--color-border-dark)]/50 px-1.5 py-0.5 rounded">{formatFileSize(video.size)}</span>
+                                        <span>{formatDate(video.created)}</span>
+                                    </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity px-2">
+                                    <button
+                                        onClick={() => handleOpenVideo(video.path)}
+                                        className="p-2 rounded-full hover:bg-[var(--color-primary)]/10 text-[var(--color-text-primary)] hover:text-[var(--color-primary)] transition-colors"
+                                        title="Play"
+                                    >
+                                        <Play className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteVideo(video.path)}
+                                        className="p-2 rounded-full hover:bg-red-500/10 text-[var(--color-text-primary)] hover:text-red-500 transition-colors"
+                                        title="Delete"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
