@@ -6,6 +6,7 @@ export default function Videos() {
     const [videos, setVideos] = useState<VideoFile[]>([]);
     const [loading, setLoading] = useState(true);
     const [saveDirectory, setSaveDirectory] = useState('');
+    const [loadingThumbnails, setLoadingThumbnails] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadVideos();
@@ -29,6 +30,8 @@ export default function Videos() {
             if (window.electron?.getVideos) {
                 const videoList = await window.electron.getVideos();
                 setVideos(videoList);
+                // Initialize loading state for all videos with thumbnails
+                setLoadingThumbnails(new Set(videoList.map((_, i) => i)));
             }
         } catch (err) {
             console.error('Failed to load videos:', err);
@@ -139,9 +142,33 @@ export default function Videos() {
                                 key={index}
                                 className="bg-[var(--color-surface-dark)] border border-[var(--color-border-dark)] rounded-lg overflow-hidden hover:border-[var(--color-primary)]/50 transition-all duration-300 group hover:shadow-xl hover:shadow-[var(--color-primary)]/10 hover:-translate-y-1"
                             >
-                                {/* Thumbnail placeholder */}
+                                {/* Thumbnail */}
                                 <div className="aspect-video bg-[var(--color-background-dark)] flex items-center justify-center relative overflow-hidden">
-                                    <Video className="w-12 h-12 text-[var(--color-text-muted)] opacity-30 transition-transform duration-300 group-hover:scale-110" />
+                                    {video.thumbnail ? (
+                                        <>
+                                            {loadingThumbnails.has(index) && (
+                                                <div className="absolute inset-0 bg-[var(--color-surface-dark)] animate-pulse z-10 flex items-center justify-center">
+                                                    <Video className="w-8 h-8 text-[var(--color-text-muted)] opacity-20" />
+                                                </div>
+                                            )}
+                                            <img
+                                                src={video.thumbnail}
+                                                alt={video.name}
+                                                className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${loadingThumbnails.has(index) ? 'opacity-0' : 'opacity-100'}`}
+                                                onLoad={() => {
+                                                    setLoadingThumbnails(prev => {
+                                                        const next = new Set(prev);
+                                                        next.delete(index);
+                                                        return next;
+                                                    });
+                                                }}
+                                            />
+                                            {/* Overlay gradient */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                                        </>
+                                    ) : (
+                                        <Video className="w-12 h-12 text-[var(--color-text-muted)] opacity-30 transition-transform duration-300 group-hover:scale-110" />
+                                    )}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
                                         <button
                                             onClick={() => handleOpenVideo(video.path)}

@@ -367,6 +367,9 @@ app.on("ready", () => {
         try {
             const fs = await import('fs/promises');
             const path = await import('path');
+            const { exec } = await import('child_process');
+            const { promisify } = await import('util');
+            const execAsync = promisify(exec);
 
             const files = await fs.readdir(saveDir);
             const videoExtensions = ['.mp4', '.webm', '.mkv', '.gif'];
@@ -380,11 +383,41 @@ app.on("ready", () => {
                     .map(async (file) => {
                         const filePath = path.join(saveDir, file);
                         const stats = await fs.stat(filePath);
+
+                        // Generate thumbnail
+                        let thumbnail: string | undefined;
+                        try {
+                            const thumbnailPath = path.join(saveDir, `.thumb_${file}.jpg`);
+
+                            // Check if thumbnail already exists
+                            try {
+                                await fs.access(thumbnailPath);
+                                // Thumbnail exists, read it
+                                const thumbBuffer = await fs.readFile(thumbnailPath);
+                                thumbnail = `data:image/jpeg;base64,${thumbBuffer.toString('base64')}`;
+                            } catch {
+                                // Generate new thumbnail using ffmpeg
+                                try {
+                                    await execAsync(
+                                        `ffmpeg -i "${filePath}" -ss 00:00:01 -vframes 1 -vf scale=320:-1 "${thumbnailPath}" -y`,
+                                        { timeout: 5000 }
+                                    );
+                                    const thumbBuffer = await fs.readFile(thumbnailPath);
+                                    thumbnail = `data:image/jpeg;base64,${thumbBuffer.toString('base64')}`;
+                                } catch (ffmpegErr) {
+                                    console.warn(`Failed to generate thumbnail for ${file}:`, ffmpegErr);
+                                }
+                            }
+                        } catch (err) {
+                            console.warn(`Thumbnail error for ${file}:`, err);
+                        }
+
                         return {
                             name: file,
                             path: filePath,
                             size: stats.size,
                             created: stats.birthtime,
+                            thumbnail,
                         };
                     })
             );
