@@ -174,11 +174,17 @@ app.on("ready", () => {
             if (sources.length > 0) {
                 regionScreenshot = sources[0].thumbnail.toDataURL();
                 cachedRegionScreenId = sources[0].id;
+            } else {
+                // If no sources found (e.g. user cancelled selection or permission denied)
+                console.log('No sources available for background capture');
+                return false;
             }
         } catch (error) {
             console.error('Failed to capture screen for background:', error);
             regionScreenshot = null;
             cachedRegionScreenId = null;
+            // Abort if capture failed, as we likely need it for the overlay and permissions
+            return false;
         }
 
         regionSelectorWindow = new BrowserWindow({

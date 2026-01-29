@@ -75,16 +75,23 @@ export default function Recorder() {
         localStorage.setItem('countdown', enabled.toString());
     };
 
-    const handleSourceModeChange = (mode: SourceMode) => {
-        setSourceMode(mode);
+    const handleSourceModeChange = async (mode: SourceMode) => {
         if (mode !== 'region') {
+            setSourceMode(mode);
             setCachedSourceId(null);
             setSelectedRegion(null);
-        }
+        } else {
+            // Region mode
+            const previousMode = sourceMode;
+            setSourceMode('region');
 
-        if (mode === 'region') {
             if (window.electron && window.electron.openRegionSelector) {
-                window.electron.openRegionSelector();
+                const success = await window.electron.openRegionSelector();
+                if (!success) {
+                    console.log('Region selection cancelled or failed');
+                    // Revert to previous mode if opening selector failed (e.g. user cancelled prompt)
+                    setSourceMode(previousMode);
+                }
             }
         }
     };
