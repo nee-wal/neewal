@@ -224,6 +224,15 @@ export default function Recorder() {
 
                 // Combine tracks using Web Audio API for better mixing if multiple audio sources exist
                 const tracks = [...desktopStream.getVideoTracks()];
+
+                // Explicitly stop and remove desktop audio tracks if system audio is disabled
+                if (!systemActive) {
+                    desktopStream.getAudioTracks().forEach(track => {
+                        track.stop();
+                        desktopStream.removeTrack(track);
+                    });
+                }
+
                 const audioContext = new AudioContext();
                 const destination = audioContext.createMediaStreamDestination();
                 let hasAudio = false;

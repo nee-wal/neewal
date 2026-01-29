@@ -48,7 +48,7 @@ declare global {
             closeRegionSelector: () => Promise<boolean>;
             regionSelected: (region: Region) => Promise<boolean>;
             onRegionSelected: (callback: (region: Region, sourceId?: string) => void) => void;
-            prepareRecording: (id: string) => Promise<boolean>;
+            prepareRecording: (id: string, includeAudio?: boolean) => Promise<boolean>;
             getRegionBackground: () => Promise<string | null>;
             showCountdown: () => Promise<boolean>;
             hideCountdown: () => Promise<boolean>;
@@ -86,7 +86,7 @@ declare global {
         'openRegionSelector': [];
         'closeRegionSelector': [];
         'regionSelected': [Region];
-        'prepareRecording': [string];
+        'prepareRecording': [string, boolean?];
         'getRegionBackground': [];
         'showCountdown': [];
         'hideCountdown': [];

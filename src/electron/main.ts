@@ -23,18 +23,19 @@ app.on("ready", () => {
             if (pendingSourceId) {
                 const source = sources.find(s => s.id === pendingSourceId);
                 if (source) {
-                    callback({ video: source, audio: 'loopback' });
+                    callback({ video: source, audio: pendingIncludeAudio ? 'loopback' : undefined });
                 } else {
                     console.log('Pending source not found:', pendingSourceId);
                     // Fallback to first screen
-                    callback({ video: sources[0], audio: 'loopback' });
+                    callback({ video: sources[0], audio: pendingIncludeAudio ? 'loopback' : undefined });
                 }
                 pendingSourceId = null;
+                pendingIncludeAudio = false;
             } else {
                 // If no pending ID, default behavior (or select first screen to avoid hanging)
                 // Since this handler effectively disables the default picker, we have to choose something.
                 // We'll choose the primary screen consistently if not specified.
-                callback({ video: sources[0], audio: 'loopback' });
+                callback({ video: sources[0], audio: undefined });
             }
         }).catch(err => {
             console.error('Error in display media request handler:', err);
@@ -276,9 +277,11 @@ app.on("ready", () => {
     });
 
     let pendingSourceId: string | null = null;
+    let pendingIncludeAudio: boolean = false;
 
-    ipcMain.handle('prepareRecording', async (_event, id: string) => {
+    ipcMain.handle('prepareRecording', async (_event, id: string, includeAudio: boolean = false) => {
         pendingSourceId = id;
+        pendingIncludeAudio = includeAudio;
         return true;
     });
 

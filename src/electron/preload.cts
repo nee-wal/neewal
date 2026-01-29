@@ -15,7 +15,7 @@ contextBridge.exposeInMainWorld('electron', {
     onRegionSelected: (callback: (region: Region, sourceId?: string) => void) => {
         ipcRenderer.on('region-selected', (_event: IpcRendererEvent, region: Region, sourceId?: string) => callback(region, sourceId));
     },
-    prepareRecording: (id: string) => ipcInvoke('prepareRecording', id),
+    prepareRecording: (id: string, includeAudio?: boolean) => ipcInvoke('prepareRecording', id, includeAudio),
     getRegionBackground: () => ipcInvoke('getRegionBackground'),
     showCountdown: () => ipcInvoke('showCountdown'),
     hideCountdown: () => ipcInvoke('hideCountdown'),
