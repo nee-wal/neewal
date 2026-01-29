@@ -374,52 +374,65 @@ app.on("ready", () => {
             const files = await fs.readdir(saveDir);
             const videoExtensions = ['.mp4', '.webm', '.mkv', '.gif'];
 
-            const videoFiles = await Promise.all(
-                files
-                    .filter(file => {
-                        const ext = path.extname(file).toLowerCase();
-                        return videoExtensions.includes(ext) && file.startsWith('Neewal_');
+            const videoFilesRaw = files.filter(file => {
+                const ext = path.extname(file).toLowerCase();
+                return videoExtensions.includes(ext);
+            });
+
+            // Cleanup: Delete orphaned thumbnails
+            const thumbnailFiles = files.filter(file => file.startsWith('.thumb_') && file.endsWith('.jpg'));
+            const validThumbnailNames = new Set(videoFilesRaw.map(v => `.thumb_${v}.jpg`));
+
+            const orphans = thumbnailFiles.filter(t => !validThumbnailNames.has(t));
+            if (orphans.length > 0) {
+                Promise.all(orphans.map(t =>
+                    fs.unlink(path.join(saveDir, t)).catch(err => {
+                        if (err.code !== 'ENOENT') console.warn('Failed to delete orphan:', t, err);
                     })
-                    .map(async (file) => {
-                        const filePath = path.join(saveDir, file);
-                        const stats = await fs.stat(filePath);
+                )).then(() => console.log(`Cleaned up ${orphans.length} orphaned thumbnails`));
+            }
 
-                        // Generate thumbnail
-                        let thumbnail: string | undefined;
+            const videoFiles = await Promise.all(
+                videoFilesRaw.map(async (file) => {
+                    const filePath = path.join(saveDir, file);
+                    const stats = await fs.stat(filePath);
+
+                    // Generate thumbnail
+                    let thumbnail: string | undefined;
+                    try {
+                        const thumbnailPath = path.join(saveDir, `.thumb_${file}.jpg`);
+
+                        // Check if thumbnail already exists
                         try {
-                            const thumbnailPath = path.join(saveDir, `.thumb_${file}.jpg`);
-
-                            // Check if thumbnail already exists
+                            await fs.access(thumbnailPath);
+                            // Thumbnail exists, read it
+                            const thumbBuffer = await fs.readFile(thumbnailPath);
+                            thumbnail = `data:image/jpeg;base64,${thumbBuffer.toString('base64')}`;
+                        } catch {
+                            // Generate new thumbnail using ffmpeg
                             try {
-                                await fs.access(thumbnailPath);
-                                // Thumbnail exists, read it
+                                await execAsync(
+                                    `ffmpeg -i "${filePath}" -ss 00:00:01 -vframes 1 -vf scale=320:-1 "${thumbnailPath}" -y`,
+                                    { timeout: 5000 }
+                                );
                                 const thumbBuffer = await fs.readFile(thumbnailPath);
                                 thumbnail = `data:image/jpeg;base64,${thumbBuffer.toString('base64')}`;
-                            } catch {
-                                // Generate new thumbnail using ffmpeg
-                                try {
-                                    await execAsync(
-                                        `ffmpeg -i "${filePath}" -ss 00:00:01 -vframes 1 -vf scale=320:-1 "${thumbnailPath}" -y`,
-                                        { timeout: 5000 }
-                                    );
-                                    const thumbBuffer = await fs.readFile(thumbnailPath);
-                                    thumbnail = `data:image/jpeg;base64,${thumbBuffer.toString('base64')}`;
-                                } catch (ffmpegErr) {
-                                    console.warn(`Failed to generate thumbnail for ${file}:`, ffmpegErr);
-                                }
+                            } catch (ffmpegErr) {
+                                console.warn(`Failed to generate thumbnail for ${file}:`, ffmpegErr);
                             }
-                        } catch (err) {
-                            console.warn(`Thumbnail error for ${file}:`, err);
                         }
+                    } catch (err) {
+                        console.warn(`Thumbnail error for ${file}:`, err);
+                    }
 
-                        return {
-                            name: file,
-                            path: filePath,
-                            size: stats.size,
-                            created: stats.birthtime,
-                            thumbnail,
-                        };
-                    })
+                    return {
+                        name: file,
+                        path: filePath,
+                        size: stats.size,
+                        created: stats.birthtime,
+                        thumbnail,
+                    };
+                })
             );
 
             // Sort by creation date, newest first
@@ -437,9 +450,25 @@ app.on("ready", () => {
 
     ipcMain.handle('deleteVideo', async (_event, videoPath: string) => {
         try {
-            unlink(videoPath, () => { });
+            const fs = await import('fs/promises');
+            const path = await import('path');
+
+            // Delete the video file
+            await fs.unlink(videoPath);
+
+            // Try to delete the thumbnail
+            try {
+                const dir = path.dirname(videoPath);
+                const file = path.basename(videoPath);
+                const thumbnailPath = path.join(dir, `.thumb_${file}.jpg`);
+                await fs.unlink(thumbnailPath);
+            } catch (thumbErr) {
+                // Ignore error if thumbnail doesn't exist
+                console.warn('Could not delete thumbnail:', thumbErr);
+            }
         } catch (err) {
             console.error('Failed to delete video:', err);
+            throw err; // Re-throw to notify frontend
         }
     });
 
