@@ -1,6 +1,7 @@
 
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { RecordingProvider } from './context/RecordingContext';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Recorder from './pages/Recorder';
@@ -47,43 +48,45 @@ function PublicOnly({ children }: { children: JSX.Element }) {
 function App() {
   return (
     <AuthProvider>
-      <HashRouter>
-        <Routes>
-          <Route path="/login" element={
-            <PublicOnly>
-              <Login />
-            </PublicOnly>
-          } />
-          <Route path="/signup" element={
-            <PublicOnly>
-              <Signup />
-            </PublicOnly>
-          } />
-          <Route path="/region-selector" element={<RegionSelectorPage />} />
-          <Route path="/countdown" element={<CountdownPage />} />
-          <Route path="/" element={
-            <RequireAuth>
-              <MainLayout>
-                <Recorder />
-              </MainLayout>
-            </RequireAuth>
-          } />
-          <Route path="/videos" element={
-            <RequireAuth>
-              <MainLayout>
-                <Videos />
-              </MainLayout>
-            </RequireAuth>
-          } />
-          <Route path="/editor" element={
-            <RequireAuth>
-              <MainLayout>
-                <VideoEditorRoute />
-              </MainLayout>
-            </RequireAuth>
-          } />
-        </Routes>
-      </HashRouter>
+      <RecordingProvider>
+        <HashRouter>
+          <Routes>
+            <Route path="/login" element={
+              <PublicOnly>
+                <Login />
+              </PublicOnly>
+            } />
+            <Route path="/signup" element={
+              <PublicOnly>
+                <Signup />
+              </PublicOnly>
+            } />
+            <Route path="/region-selector" element={<RegionSelectorPage />} />
+            <Route path="/countdown" element={<CountdownPage />} />
+            <Route path="/" element={
+              <RequireAuth>
+                <MainLayout>
+                  <Recorder />
+                </MainLayout>
+              </RequireAuth>
+            } />
+            <Route path="/videos" element={
+              <RequireAuth>
+                <MainLayout>
+                  <Videos />
+                </MainLayout>
+              </RequireAuth>
+            } />
+            <Route path="/editor" element={
+              <RequireAuth>
+                <MainLayout>
+                  <VideoEditorRoute />
+                </MainLayout>
+              </RequireAuth>
+            } />
+          </Routes>
+        </HashRouter>
+      </RecordingProvider>
     </AuthProvider>
   );
 }

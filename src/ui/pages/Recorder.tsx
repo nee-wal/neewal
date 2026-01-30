@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings2, Pause, Play } from 'lucide-react';
 import { RecordButton } from '../components/RecordButton';
@@ -8,13 +8,26 @@ import { SourceSelector } from '../components/SourceSelector';
 import { AudioControls } from '../components/AudioControls';
 import { FormatSelector } from '../components/FormatSelector';
 import { SettingsModal } from '../components/SettingsModal';
+import { useRecording } from '../context/RecordingContext';
 
 export default function Recorder() {
     const navigate = useNavigate();
 
-    const [isRecording, setIsRecording] = useState(false);
-    const [isPaused, setIsPaused] = useState(false);
-    const [seconds, setSeconds] = useState(0);
+    // Use recording context for persistent state
+    const {
+        isRecording,
+        setIsRecording,
+        isPaused,
+        setIsPaused,
+        seconds,
+        setSeconds,
+        statusText,
+        setStatusText,
+        mediaRecorderRef,
+        streamRef,
+        timerIntervalRef
+    } = useRecording();
+
     const [sourceMode, setSourceMode] = useState<SourceMode>('screen');
     const [micActive, setMicActive] = useState(true);
     const [systemActive, setSystemActive] = useState(false);
@@ -152,15 +165,6 @@ export default function Recorder() {
             });
         }
     }, []);
-
-    // Status text logic
-    const [statusText, setStatusText] = useState('Ready to record');
-
-
-    const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const streamRef = useRef<MediaStream | null>(null);
 
     const toggleRecording = async () => {
         if (!isRecording) {
@@ -534,15 +538,6 @@ export default function Recorder() {
             setStatusText('Paused');
         }
     };
-
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            if (timerIntervalRef.current) {
-                clearInterval(timerIntervalRef.current);
-            }
-        };
-    }, []);
 
     return (
         <>
