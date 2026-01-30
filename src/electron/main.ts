@@ -311,21 +311,17 @@ app.on("ready", () => {
             countdownWindow.close();
         }
 
-        const primaryDisplay = screen.getPrimaryDisplay();
-        const { width, height } = primaryDisplay.bounds;
-
         countdownWindow = new BrowserWindow({
-            width,
-            height,
-            x: 0,
-            y: 0,
+            width: 300,
+            height: 300,
             transparent: true,
             frame: false,
             alwaysOnTop: true,
             skipTaskbar: true,
             resizable: false,
             movable: false,
-            fullscreen: true,
+            center: true,
+            hasShadow: false, // Cleaner look for transparent content
             webPreferences: {
                 preload: getPreLoadPath(),
                 nodeIntegration: false,
