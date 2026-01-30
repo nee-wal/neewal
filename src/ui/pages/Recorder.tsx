@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { Settings2 } from 'lucide-react';
+import { Settings2, Pause, Play } from 'lucide-react';
 import { RecordButton } from '../components/RecordButton';
 import { TimerDisplay } from '../components/TimerDisplay';
 import { SourceSelector } from '../components/SourceSelector';
@@ -11,6 +11,7 @@ import { SettingsModal } from '../components/SettingsModal';
 export default function Recorder() {
 
     const [isRecording, setIsRecording] = useState(false);
+    const [isPaused, setIsPaused] = useState(false);
     const [seconds, setSeconds] = useState(0);
     const [sourceMode, setSourceMode] = useState<SourceMode>('screen');
     const [micActive, setMicActive] = useState(true);
@@ -464,7 +465,7 @@ export default function Recorder() {
 
             // UI Feedback immediately
             setIsRecording(false);
-            setStatusText('Processing...');
+            setIsPaused(false);
             setStatusText('Processing...');
 
             // Stop Timer
@@ -489,6 +490,41 @@ export default function Recorder() {
                     setSeconds(0);
                 }, 3000);
             }, 500);
+        }
+    };
+
+    const togglePause = () => {
+        if (!isRecording || !mediaRecorderRef.current) return;
+
+        if (isPaused) {
+            // Resume
+            if (mediaRecorderRef.current.state === 'paused') {
+                mediaRecorderRef.current.resume();
+            }
+
+            // Resume Timer
+            if (!timerIntervalRef.current) {
+                timerIntervalRef.current = setInterval(() => {
+                    setSeconds(prev => prev + 1);
+                }, 1000);
+            }
+
+            setIsPaused(false);
+            setStatusText('Recording...');
+        } else {
+            // Pause
+            if (mediaRecorderRef.current.state === 'recording') {
+                mediaRecorderRef.current.pause();
+            }
+
+            // Pause Timer
+            if (timerIntervalRef.current) {
+                clearInterval(timerIntervalRef.current);
+                timerIntervalRef.current = null;
+            }
+
+            setIsPaused(true);
+            setStatusText('Paused');
         }
     };
 
@@ -531,13 +567,32 @@ export default function Recorder() {
                             <TimerDisplay seconds={seconds} />
                         </div>
 
-                        {/* Main Record Button */}
-                        <div className="relative group">
-                            <div className={`absolute inset-0 bg-[var(--color-primary)] rounded-full opacity-20 blur-xl transition-all duration-500 ${isRecording ? 'scale-150 animate-pulse' : 'scale-75 group-hover:scale-100'}`}></div>
-                            <RecordButton
-                                isRecording={isRecording}
-                                onClick={toggleRecording}
-                            />
+                        {/* Main Controls */}
+                        <div className="flex items-center gap-6">
+                            {/* Pause/Resume Button (only visible when recording) */}
+                            {isRecording && (
+                                <button
+                                    onClick={togglePause}
+                                    className="p-4 rounded-full bg-[var(--color-surface-dark)] border-2 border-[var(--color-border-dark)] text-[var(--color-text-primary)] hover:border-[var(--color-primary)] hover:bg-[var(--color-surface-dark)]/80 hover:shadow-[0_0_15px_#3FB6A84D] transition-all duration-300 active:scale-95 group relative overflow-hidden"
+                                    title={isPaused ? "Resume Recording" : "Pause Recording"}
+                                >
+                                    <div className="absolute inset-0 bg-[var(--color-primary)]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    {isPaused ? (
+                                        <Play className="w-6 h-6 fill-current" />
+                                    ) : (
+                                        <Pause className="w-6 h-6 fill-current" />
+                                    )}
+                                </button>
+                            )}
+
+                            {/* Main Record Button */}
+                            <div className="relative group">
+                                <div className={`absolute inset-0 bg-[var(--color-primary)] rounded-full opacity-20 blur-xl transition-all duration-500 ${isRecording ? 'scale-150 animate-pulse' : 'scale-75 group-hover:scale-100'}`}></div>
+                                <RecordButton
+                                    isRecording={isRecording}
+                                    onClick={toggleRecording}
+                                />
+                            </div>
                         </div>
 
                         {/* Controls Grid */}
