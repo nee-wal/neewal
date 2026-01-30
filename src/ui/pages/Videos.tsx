@@ -7,7 +7,7 @@ export default function Videos() {
     const [loading, setLoading] = useState(true);
     const [saveDirectory, setSaveDirectory] = useState('');
     const [loadingThumbnails, setLoadingThumbnails] = useState<Set<number>>(new Set());
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const [selectedVideos, setSelectedVideos] = useState<Set<string>>(new Set());
     const [isSelectionMode, setIsSelectionMode] = useState(false);
 
