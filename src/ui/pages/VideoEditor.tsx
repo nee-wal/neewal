@@ -140,6 +140,15 @@ export default function VideoEditor({ videoPath, onBack }: VideoEditorProps) {
         };
     }, [isDraggingStart, isDraggingEnd, startTime, endTime, duration]);
 
+    // Listen for export progress updates
+    useEffect(() => {
+        if (window.electron && window.electron.onExportProgress) {
+            window.electron.onExportProgress((progress: number) => {
+                setExportProgress(progress);
+            });
+        }
+    }, []);
+
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
@@ -157,23 +166,32 @@ export default function VideoEditor({ videoPath, onBack }: VideoEditorProps) {
             setIsExporting(true);
             setExportProgress(0);
 
+            console.log('[VideoEditor] Starting export...');
             const result = await window.electron.exportTrimmedVideo(
                 videoPath,
                 startTime,
                 endTime
             );
 
+            console.log('[VideoEditor] Export result:', result);
+
             if (result.success) {
-                alert(`Video exported successfully to: ${result.outputPath}`);
+                // Open the folder first
                 if (result.outputPath) {
                     const folderPath = result.outputPath.substring(0, result.outputPath.lastIndexOf('/'));
                     await window.electron.openFolder(folderPath);
                 }
+
+                // Show success message
+                alert(`Video exported successfully to: ${result.outputPath}`);
+
+                // Close the trimming page after user acknowledges
+                onBack();
             } else {
-                alert(`Export failed: ${result.error}`);
+                alert(`Export failed: ${result.error || 'Unknown error'}`);
             }
         } catch (error) {
-            console.error('Export error:', error);
+            console.error('[VideoEditor] Export error:', error);
             alert('Failed to export video. See console for details.');
         } finally {
             setIsExporting(false);
