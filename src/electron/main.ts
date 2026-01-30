@@ -99,7 +99,6 @@ app.on("ready", () => {
         return new Promise((resolve, reject) => {
             if (recordingStream) {
                 recordingStream.end(async () => {
-                    // Conversion using ffmpeg
                     if (!tempFilePath) {
                         resolve(null);
                         return;
@@ -116,12 +115,24 @@ app.on("ready", () => {
                     const outputFilename = `Neewal_${yyyy}-${mm}-${dd}_${h}-${m}-${s}.${format}`;
                     const outputPath = join(saveDir, outputFilename);
 
-                    // Allow ffmpeg path to be configurable or found in path
-                    const ffmpegPath = '/usr/bin/ffmpeg'; // Hardcoded as per user instructions for now/Linux
+                    // For WebM, no conversion needed - just rename the file
+                    if (format === 'webm') {
+                        try {
+                            const fs = await import('fs/promises');
+                            await fs.rename(tempFilePath, outputPath);
+                            console.log(`WebM file saved directly (no conversion): ${outputPath}`);
+                            resolve(outputPath);
+                        } catch (err) {
+                            console.error('Failed to rename WebM file:', err);
+                            reject(err);
+                        }
+                        return;
+                    }
 
+                    // For other formats, use FFmpeg for conversion
+                    const ffmpegPath = '/usr/bin/ffmpeg';
                     let ffmpegArgs: string[] = [];
 
-                    // Configure ffmpeg arguments based on format
                     switch (format) {
                         case 'mp4':
                             ffmpegArgs = [
@@ -132,15 +143,6 @@ app.on("ready", () => {
                                 '-c:a', 'aac',           // AAC codec for audio
                                 '-b:a', '128k',          // Audio bitrate
                                 '-movflags', '+faststart', // Enable fast start for web playback
-                                outputPath
-                            ];
-                            break;
-
-                        case 'webm':
-                            ffmpegArgs = [
-                                '-i', tempFilePath,
-                                '-c:v', 'copy',          // Copy video stream (no re-encoding)
-                                '-c:a', 'copy',          // Copy audio stream (no re-encoding)
                                 outputPath
                             ];
                             break;
