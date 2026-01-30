@@ -1,5 +1,6 @@
 
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Settings2, Pause, Play } from 'lucide-react';
 import { RecordButton } from '../components/RecordButton';
 import { TimerDisplay } from '../components/TimerDisplay';
@@ -9,6 +10,7 @@ import { FormatSelector } from '../components/FormatSelector';
 import { SettingsModal } from '../components/SettingsModal';
 
 export default function Recorder() {
+    const navigate = useNavigate();
 
     const [isRecording, setIsRecording] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
@@ -481,6 +483,11 @@ export default function Recorder() {
                 );
                 if (path) {
                     setStatusText(`Saved to ${path.split('/').pop()}`);
+
+                    // Auto-open video editor
+                    setTimeout(() => {
+                        navigate('/editor', { state: { videoPath: path } });
+                    }, 1500);
                 } else {
                     setStatusText('Save failed');
                 }

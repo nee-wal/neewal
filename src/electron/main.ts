@@ -6,13 +6,18 @@ import { spawn } from 'child_process';
 import { tmpdir } from 'os';
 import { getPreLoadPath, getUiPath } from "./pathResolver.js";
 import { getDefaultSaveDirectory } from "./utils.js";
+import { registerVideoTrimmingHandlers } from './videoTrimmingHandlers.js';
 
 app.on("ready", () => {
+    // Register video trimming IPC handlers
+    registerVideoTrimmingHandlers();
+
     const mainWindow = new BrowserWindow({
         minWidth: 600,
         minHeight: 600,
         webPreferences: {
             preload: getPreLoadPath(),
+            webSecurity: false, // Allow loading local video files
         },
         autoHideMenuBar: true,
     });

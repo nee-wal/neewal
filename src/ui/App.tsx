@@ -7,6 +7,7 @@ import Recorder from './pages/Recorder';
 import Videos from './pages/Videos';
 import RegionSelectorPage from './pages/RegionSelectorPage';
 import CountdownPage from './pages/CountdownPage';
+import VideoEditorRoute from './pages/VideoEditorRoute';
 import { MainLayout } from './components/MainLayout';
 import './index.css';
 import type { JSX } from "react";
@@ -71,6 +72,13 @@ function App() {
             <RequireAuth>
               <MainLayout>
                 <Videos />
+              </MainLayout>
+            </RequireAuth>
+          } />
+          <Route path="/editor" element={
+            <RequireAuth>
+              <MainLayout>
+                <VideoEditorRoute />
               </MainLayout>
             </RequireAuth>
           } />

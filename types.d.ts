@@ -58,6 +58,8 @@ declare global {
             openVideo: (path: string) => Promise<void>;
             deleteVideo: (path: string) => Promise<void>;
             openFolder: (path: string) => Promise<void>;
+            exportTrimmedVideo: (inputPath: string, startTime: number, endTime: number) => Promise<TrimExportResult>;
+            onExportProgress: (callback: (progress: number) => void) => void;
         };
     }
 
@@ -81,6 +83,7 @@ declare global {
         'openVideo': void;
         'deleteVideo': void;
         'openFolder': void;
+        'exportTrimmedVideo': TrimExportResult;
     }
 
     type EventParamsMapping = {
@@ -103,6 +106,7 @@ declare global {
         'openVideo': [string];
         'deleteVideo': [string];
         'openFolder': [string];
+        'exportTrimmedVideo': [string, number, number];
     }
 
     interface SettingsModalProps {
@@ -199,5 +203,11 @@ declare global {
         size: number;
         created: Date;
         thumbnail?: string;
+    }
+
+    interface TrimExportResult {
+        success: boolean;
+        outputPath?: string;
+        error?: string;
     }
 }

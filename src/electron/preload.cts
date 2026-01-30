@@ -27,6 +27,10 @@ contextBridge.exposeInMainWorld('electron', {
     openVideo: (path: string) => ipcInvoke('openVideo', path),
     deleteVideo: (path: string) => ipcInvoke('deleteVideo', path),
     openFolder: (path: string) => ipcInvoke('openFolder', path),
+    exportTrimmedVideo: (inputPath: string, startTime: number, endTime: number) => ipcInvoke('exportTrimmedVideo', inputPath, startTime, endTime),
+    onExportProgress: (callback: (progress: number) => void) => {
+        ipcRenderer.on('export-progress', (_event: IpcRendererEvent, progress: number) => callback(progress));
+    },
 } satisfies Window['electron']);
 
 const ipcInvoke = <Key extends keyof EventPayloadMapping>(
