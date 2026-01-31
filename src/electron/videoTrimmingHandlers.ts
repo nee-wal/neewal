@@ -19,14 +19,16 @@ export function registerVideoTrimmingHandlers() {
         event: IpcMainInvokeEvent,
         inputPath: string,
         startTime: number,
-        endTime: number
+        endTime: number,
+        format: 'mp4' | 'webm' | 'mkv' | 'gif' = 'mp4'
     ) => {
         try {
             console.log(`[Export] Starting export for: ${inputPath}`);
             console.log(`[Export] Trim range: ${startTime}s - ${endTime}s`);
+            console.log(`[Export] Output format: ${format}`);
 
-            // Generate output filename
-            const outputPath = generateTrimmedFilename(inputPath);
+            // Generate output filename with the selected format
+            const outputPath = generateTrimmedFilename(inputPath, format);
             console.log(`[Export] Output path: ${outputPath}`);
 
             // Export the video with progress tracking
@@ -35,6 +37,7 @@ export function registerVideoTrimmingHandlers() {
                 outputPath,
                 startTime,
                 endTime,
+                format,
                 onProgress: (progress) => {
                     console.log(`[Export] Progress: ${progress}%`);
                     // Send progress updates to renderer

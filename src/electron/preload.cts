@@ -8,7 +8,7 @@ contextBridge.exposeInMainWorld('electron', {
     getPrimaryScreen: () => ipcInvoke('getPrimaryScreen'),
     startRecording: () => ipcInvoke('startRecording'),
     saveChunk: (chunk: ArrayBuffer) => ipcInvoke('saveChunk', chunk),
-    stopRecording: (saveDir: string, format: string) => ipcInvoke('stopRecording', saveDir, format),
+    stopRecording: (saveDir: string) => ipcInvoke('stopRecording', saveDir),
     openRegionSelector: () => ipcInvoke('openRegionSelector'),
     closeRegionSelector: () => ipcInvoke('closeRegionSelector'),
     regionSelected: (region: Region) => ipcInvoke('regionSelected', region),
@@ -27,7 +27,7 @@ contextBridge.exposeInMainWorld('electron', {
     openVideo: (path: string) => ipcInvoke('openVideo', path),
     deleteVideo: (path: string) => ipcInvoke('deleteVideo', path),
     openFolder: (path: string) => ipcInvoke('openFolder', path),
-    exportTrimmedVideo: (inputPath: string, startTime: number, endTime: number) => ipcInvoke('exportTrimmedVideo', inputPath, startTime, endTime),
+    exportTrimmedVideo: (inputPath: string, startTime: number, endTime: number, format?: 'mp4' | 'webm' | 'mkv' | 'gif') => ipcInvoke('exportTrimmedVideo', inputPath, startTime, endTime, format),
     onExportProgress: (callback: (progress: number) => void) => {
         ipcRenderer.on('export-progress', (_event: IpcRendererEvent, progress: number) => callback(progress));
     },

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Trash2, FolderOpen, Scissors, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
+import { ExportFormatModal } from '../components/ExportFormatModal';
 
 interface VideoEditorProps {
     videoPath: string;
@@ -15,6 +16,7 @@ export interface TrimData {
 export default function VideoEditor({ videoPath, onBack }: VideoEditorProps) {
     const [isExporting, setIsExporting] = useState(false);
     const [exportProgress, setExportProgress] = useState(0);
+    const [isFormatModalOpen, setIsFormatModalOpen] = useState(false);
 
     // Video player state
     const videoRef = React.useRef<HTMLVideoElement>(null);
@@ -60,6 +62,22 @@ export default function VideoEditor({ videoPath, onBack }: VideoEditorProps) {
             video.removeEventListener('timeupdate', handleTimeUpdate);
         };
     }, [endTime, isPlaying]);
+
+    // Force video to load and check if already loaded
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        // If video is already loaded (cached), manually trigger metadata load
+        if (video.readyState >= 1 && video.duration) {
+            console.log('Video already loaded, setting duration:', video.duration);
+            setDuration(video.duration);
+            setEndTime(video.duration);
+        } else {
+            // Force load
+            video.load();
+        }
+    }, [videoPath]);
 
     const togglePlayPause = () => {
         const video = videoRef.current;
@@ -150,13 +168,16 @@ export default function VideoEditor({ videoPath, onBack }: VideoEditorProps) {
     }, []);
 
     const formatTime = (seconds: number) => {
+        if (!isFinite(seconds) || isNaN(seconds)) {
+            return '00:00.00';
+        }
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         const ms = Math.floor((seconds % 1) * 100);
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
     };
 
-    const handleExport = async () => {
+    const handleExport = async (format: 'mp4' | 'webm' | 'mkv' | 'gif') => {
         if (!window.electron) {
             alert('Export functionality requires Electron');
             return;
@@ -166,11 +187,11 @@ export default function VideoEditor({ videoPath, onBack }: VideoEditorProps) {
             setIsExporting(true);
             setExportProgress(0);
 
-            console.log('[VideoEditor] Starting export...');
             const result = await window.electron.exportTrimmedVideo(
                 videoPath,
                 startTime,
-                endTime
+                endTime,
+                format
             );
 
             console.log('[VideoEditor] Export result:', result);
@@ -278,7 +299,14 @@ export default function VideoEditor({ videoPath, onBack }: VideoEditorProps) {
                                 const videoElement = e.currentTarget;
                                 setVideoError(videoElement.error?.message || 'Unknown error');
                             }}
-                            onLoadedMetadata={() => setVideoError(null)}
+                            onLoadedMetadata={(e) => {
+                                const video = e.currentTarget;
+                                const dur = video.duration;
+                                console.log('Video metadata loaded, duration:', dur);
+                                setDuration(dur);
+                                setEndTime(dur);
+                                setVideoError(null);
+                            }}
                         />
 
                         {videoError && (
@@ -414,7 +442,7 @@ export default function VideoEditor({ videoPath, onBack }: VideoEditorProps) {
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-[var(--color-text-muted)]">Format:</span>
-                                <span className="text-[var(--color-text-primary)] font-mono">MP4 (H.264)</span>
+                                <span className="text-[var(--color-text-primary)] font-mono">Choose at export</span>
                             </div>
                         </div>
                     </div>
@@ -437,7 +465,7 @@ export default function VideoEditor({ videoPath, onBack }: VideoEditorProps) {
 
                     {/* Export Button */}
                     <button
-                        onClick={handleExport}
+                        onClick={() => setIsFormatModalOpen(true)}
                         disabled={isExporting}
                         className="w-full py-3 px-4 bg-[var(--color-primary)] text-white rounded-lg font-semibold hover:bg-[var(--color-primary)]/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2"
                     >
@@ -446,6 +474,13 @@ export default function VideoEditor({ videoPath, onBack }: VideoEditorProps) {
                     </button>
                 </div>
             </div>
+
+            {/* Export Format Modal */}
+            <ExportFormatModal
+                isOpen={isFormatModalOpen}
+                onClose={() => setIsFormatModalOpen(false)}
+                onExport={handleExport}
+            />
         </main>
     );
 }

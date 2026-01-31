@@ -482,8 +482,7 @@ export default function Recorder() {
 
             setTimeout(async () => {
                 const path = await window.electron.stopRecording(
-                    saveDirectory || await window.electron.getDefaultSaveDirectory(),
-                    format
+                    saveDirectory || await window.electron.getDefaultSaveDirectory()
                 );
                 if (path) {
                     setStatusText(`Saved to ${path.split('/').pop()}`);

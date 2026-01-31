@@ -43,7 +43,7 @@ declare global {
             getPrimaryScreen: () => Promise<DesktopCapturerSource | null>;
             startRecording: () => Promise<string>;
             saveChunk: (chunk: ArrayBuffer) => Promise<void>;
-            stopRecording: (saveDir: string, format: string) => Promise<string | null>;
+            stopRecording: (saveDir: string) => Promise<string | null>;
             openRegionSelector: () => Promise<boolean>;
             closeRegionSelector: () => Promise<boolean>;
             regionSelected: (region: Region) => Promise<boolean>;
@@ -58,7 +58,7 @@ declare global {
             openVideo: (path: string) => Promise<void>;
             deleteVideo: (path: string) => Promise<void>;
             openFolder: (path: string) => Promise<void>;
-            exportTrimmedVideo: (inputPath: string, startTime: number, endTime: number) => Promise<TrimExportResult>;
+            exportTrimmedVideo: (inputPath: string, startTime: number, endTime: number, format?: 'mp4' | 'webm' | 'mkv' | 'gif') => Promise<TrimExportResult>;
             onExportProgress: (callback: (progress: number) => void) => void;
         };
     }
@@ -92,7 +92,7 @@ declare global {
         'getSources': [];
         'getPrimaryScreen': [];
         'startRecording': [];
-        'stopRecording': [string, string];
+        'stopRecording': [string];
         'saveChunk': [ArrayBuffer];
         'openRegionSelector': [];
         'closeRegionSelector': [];
@@ -106,7 +106,7 @@ declare global {
         'openVideo': [string];
         'deleteVideo': [string];
         'openFolder': [string];
-        'exportTrimmedVideo': [string, number, number];
+        'exportTrimmedVideo': [string, number, number, ('mp4' | 'webm' | 'mkv' | 'gif')?];
     }
 
     interface SettingsModalProps {

@@ -95,7 +95,7 @@ app.on("ready", () => {
         }
     });
 
-    ipcMain.handle('stopRecording', async (_event, saveDir: string, format: string) => {
+    ipcMain.handle('stopRecording', async (_event, saveDir: string) => {
         return new Promise((resolve, reject) => {
             if (recordingStream) {
                 recordingStream.end(async () => {
@@ -112,96 +112,73 @@ app.on("ready", () => {
                     const m = String(now.getMinutes()).padStart(2, '0');
                     const s = String(now.getSeconds()).padStart(2, '0');
 
-                    const outputFilename = `Neewal_${yyyy}-${mm}-${dd}_${h}-${m}-${s}.${format}`;
+                    // Always save as WebM (internal format, optimized for speed)
+                    const outputFilename = `Neewal_${yyyy}-${mm}-${dd}_${h}-${m}-${s}.webm`;
                     const outputPath = join(saveDir, outputFilename);
 
-                    // For WebM, no conversion needed - just rename the file
-                    if (format === 'webm') {
-                        try {
-                            const fs = await import('fs/promises');
-                            await fs.rename(tempFilePath, outputPath);
-                            console.log(`WebM file saved directly (no conversion): ${outputPath}`);
-                            resolve(outputPath);
-                        } catch (err) {
-                            console.error('Failed to rename WebM file:', err);
-                            reject(err);
-                        }
-                        return;
-                    }
+                    try {
+                        // Fix WebM duration using FFmpeg remux
+                        // MediaRecorder doesn't write duration to WebM header, so we need to fix it
+                        console.log('Fixing WebM duration metadata...');
 
-                    // For other formats, use FFmpeg for conversion
-                    const ffmpegPath = '/usr/bin/ffmpeg';
-                    let ffmpegArgs: string[] = [];
+                        const { spawn } = await import('child_process');
+                        const ffmpegProcess = spawn('ffmpeg', [
+                            '-i', tempFilePath,
+                            '-c', 'copy',  // Stream copy (no re-encoding)
+                            '-y',          // Overwrite output
+                            outputPath
+                        ]);
 
-                    switch (format) {
-                        case 'mp4':
-                            ffmpegArgs = [
-                                '-i', tempFilePath,
-                                '-c:v', 'libx264',      // H.264 codec for video
-                                '-preset', 'fast',       // Encoding speed/quality tradeoff
-                                '-crf', '23',            // Quality (lower = better, 18-28 is good range)
-                                '-c:a', 'aac',           // AAC codec for audio
-                                '-b:a', '128k',          // Audio bitrate
-                                '-movflags', '+faststart', // Enable fast start for web playback
-                                outputPath
-                            ];
-                            break;
+                        let stderr = '';
+                        ffmpegProcess.stderr.on('data', (data) => {
+                            stderr += data.toString();
+                        });
 
-                        case 'mkv':
-                            ffmpegArgs = [
-                                '-i', tempFilePath,
-                                '-c:v', 'copy',          // Copy video stream (no re-encoding)
-                                '-c:a', 'copy',          // Copy audio stream (no re-encoding)
-                                outputPath
-                            ];
-                            break;
+                        ffmpegProcess.on('close', async (code) => {
+                            // Clean up temp file
+                            try {
+                                const fs = await import('fs/promises');
+                                await fs.unlink(tempFilePath!);
+                            } catch (err) {
+                                console.warn('Failed to delete temp file:', err);
+                            }
 
-                        case 'gif':
-                            ffmpegArgs = [
-                                '-i', tempFilePath,
-                                '-vf', 'fps=10,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse', // Optimize for GIF
-                                '-loop', '0',            // Loop forever
-                                outputPath
-                            ];
-                            break;
+                            if (code === 0) {
+                                console.log(`Recording saved with fixed duration: ${outputPath}`);
+                                resolve(outputPath);
+                            } else {
+                                console.error('FFmpeg failed to fix duration:', stderr);
+                                // Fallback: try to save the original file anyway
+                                try {
+                                    const fs = await import('fs/promises');
+                                    await fs.rename(tempFilePath!, outputPath);
+                                    console.log(`Saved original file (duration may be missing): ${outputPath}`);
+                                    resolve(outputPath);
+                                } catch (err) {
+                                    console.error('Failed to save recording:', err);
+                                    reject(err);
+                                }
+                            }
+                        });
 
-                        default:
-                            // Default to mp4
-                            ffmpegArgs = [
-                                '-i', tempFilePath,
-                                '-c:v', 'libx264',
-                                '-preset', 'fast',
-                                '-crf', '23',
-                                '-c:a', 'aac',
-                                '-b:a', '128k',
-                                '-movflags', '+faststart',
-                                outputPath
-                            ];
-                    }
+                        ffmpegProcess.on('error', async (err) => {
+                            console.error('FFmpeg process error:', err);
+                            // Fallback: save the original file
+                            try {
+                                const fs = await import('fs/promises');
+                                await fs.rename(tempFilePath!, outputPath);
+                                console.log(`Saved original file (duration may be missing): ${outputPath}`);
+                                resolve(outputPath);
+                            } catch (fallbackErr) {
+                                console.error('Failed to save recording:', fallbackErr);
+                                reject(fallbackErr);
+                            }
+                        });
 
-                    const ffmpeg = spawn(ffmpegPath, ffmpegArgs);
-
-                    ffmpeg.stderr.on('data', (data) => {
-                        // Log ffmpeg output for debugging
-                        console.log(`ffmpeg: ${data}`);
-                    });
-
-                    ffmpeg.on('close', (code) => {
-                        if (code === 0) {
-                            // Delete temp file
-                            unlink(tempFilePath!, () => { });
-                            resolve(outputPath);
-                        } else {
-                            console.error('ffmpeg failed with code', code);
-                            resolve(null);
-                        }
-                    });
-
-                    ffmpeg.on('error', (err) => {
-                        console.error('ffmpeg spawn error', err);
+                    } catch (err) {
+                        console.error('Failed to process recording:', err);
                         reject(err);
-                    });
-
+                    }
                 });
                 recordingStream = null;
             } else {
