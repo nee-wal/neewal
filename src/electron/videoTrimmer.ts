@@ -1,6 +1,13 @@
 import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import path from 'path';
+// @ts-ignore
+import ffmpegPath from 'ffmpeg-static';
+// @ts-ignore
+import ffprobeStatic from 'ffprobe-static';
+
+const ffmpegBinary = (ffmpegPath as any) || 'ffmpeg';
+const ffprobeBinary = (ffprobeStatic as any)?.path || 'ffprobe';
 
 export type ExportFormat = 'mp4' | 'webm' | 'mkv' | 'gif';
 
@@ -25,7 +32,7 @@ export interface TrimExportResult {
 async function detectGPUEncoder(): Promise<'vaapi' | 'nvenc' | 'none'> {
     return new Promise((resolve) => {
         // Check for NVIDIA GPU (NVENC)
-        const nvencCheck = spawn('ffmpeg', ['-hide_banner', '-encoders']);
+        const nvencCheck = spawn(ffmpegBinary, ['-hide_banner', '-encoders']);
         let nvencOutput = '';
 
         nvencCheck.stdout.on('data', (data) => {
@@ -39,7 +46,7 @@ async function detectGPUEncoder(): Promise<'vaapi' | 'nvenc' | 'none'> {
             }
 
             // Check for VAAPI (Intel/AMD)
-            const vaapiCheck = spawn('ffmpeg', ['-hide_banner', '-hwaccels']);
+            const vaapiCheck = spawn(ffmpegBinary, ['-hide_banner', '-hwaccels']);
             let vaapiOutput = '';
 
             vaapiCheck.stdout.on('data', (data) => {
@@ -191,7 +198,7 @@ async function ensureValidVideoFile(inputPath: string): Promise<{ path: string; 
     const tempPath = path.join(tempDir, `recovery_${Date.now()}.webm`);
 
     return new Promise((resolve) => {
-        const ffmpeg = spawn('ffmpeg', [
+        const ffmpeg = spawn(ffmpegBinary, [
             '-i', inputPath,
             '-c', 'copy',
             '-y',
@@ -276,10 +283,10 @@ export async function exportTrimmedVideo(options: TrimExportOptions): Promise<Tr
         const runExport = async (encoder: 'vaapi' | 'nvenc' | 'none'): Promise<TrimExportResult> => {
             const args = buildFFmpegArgs(sourcePath, outputPath, finalStartTime, exportDuration, format, encoder);
             console.log(`[VideoTrimmer] Running export with encoder: ${encoder}`);
-            console.log('FFmpeg command:', 'ffmpeg', args.join(' '));
+            console.log('FFmpeg command:', ffmpegBinary, args.join(' '));
 
             return new Promise((resolve) => {
-                const ffmpeg = spawn('ffmpeg', args);
+                const ffmpeg = spawn(ffmpegBinary, args);
                 let stderr = '';
 
                 ffmpeg.stderr.on('data', (data) => {
@@ -383,7 +390,7 @@ export async function getVideoMetadata(videoPath: string): Promise<{
     fps: number;
 } | null> {
     return new Promise((resolve) => {
-        const ffprobe = spawn('ffprobe', [
+        const ffprobe = spawn(ffprobeBinary, [
             '-v', 'quiet',
             '-print_format', 'json',
             '-show_format',

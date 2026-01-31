@@ -1,9 +1,14 @@
 import { app, BrowserWindow, dialog, desktopCapturer, ipcMain, screen } from 'electron';
 import { ipcMainHandle, isDev } from "./utils.js";
-import { unlink, createWriteStream, WriteStream } from 'fs';
+import { createWriteStream, WriteStream } from 'fs';
 import { join } from 'path';
 import { spawn } from 'child_process';
 import { tmpdir } from 'os';
+// @ts-ignore
+import ffmpegPath from 'ffmpeg-static';
+
+const ffmpegBinary = (ffmpegPath as any) || 'ffmpeg';
+
 import { getPreLoadPath, getUiPath } from "./pathResolver.js";
 import { getDefaultSaveDirectory } from "./utils.js";
 import { registerVideoTrimmingHandlers } from './videoTrimmingHandlers.js';
@@ -121,8 +126,7 @@ app.on("ready", () => {
                         // MediaRecorder doesn't write duration to WebM header, so we need to fix it
                         console.log('Fixing WebM duration metadata...');
 
-                        const { spawn } = await import('child_process');
-                        const ffmpegProcess = spawn('ffmpeg', [
+                        const ffmpegProcess = spawn(ffmpegBinary, [
                             '-i', tempFilePath,
                             '-c', 'copy',  // Stream copy (no re-encoding)
                             '-y',          // Overwrite output
@@ -392,7 +396,7 @@ app.on("ready", () => {
                             // Generate new thumbnail using ffmpeg
                             try {
                                 await execAsync(
-                                    `ffmpeg -i "${filePath}" -ss 00:00:01 -vframes 1 -vf scale=320:-1 "${thumbnailPath}" -y`,
+                                    `"${ffmpegBinary}" -i "${filePath}" -ss 00:00:01 -vframes 1 -vf scale=320:-1 "${thumbnailPath}" -y`,
                                     { timeout: 5000 }
                                 );
                                 const thumbBuffer = await fs.readFile(thumbnailPath);
